@@ -1,63 +1,46 @@
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
+using System.Collections.Generic;    // ← add this
+using Newtonsoft.Json.Linq;  
 
-public class Spell 
+public abstract class Spell
 {
-    public float last_cast;
-    public SpellCaster owner;
-    public Hittable.Team team;
+    protected SpellCaster owner;
+    public SpellCaster Owner => owner;
+    public float lastCast;
+    public StatBlock mods = new();
 
-    public Spell(SpellCaster owner)
-    {
-        this.owner = owner;
-    }
+    protected Spell(SpellCaster owner) { this.owner = owner; }
 
-    public string GetName()
-    {
-        return "Bolt";
-    }
+    public abstract string DisplayName { get; }
+    public abstract int    IconIndex   { get; }
 
-    public int GetManaCost()
-    {
-        return 10;
-    }
+    protected virtual float BaseDamage   => 10;
+    protected virtual float BaseMana     => 10;
+    protected virtual float BaseCooldown => 1;
+    protected virtual float BaseSpeed    => 8;
 
-    public int GetDamage()
-    {
-        return 100;
-    }
+    public float Damage   => StatBlock.Apply(BaseDamage,   mods.damage);
+    public float Mana     => StatBlock.Apply(BaseMana,     mods.mana);
+    public float Cooldown => StatBlock.Apply(BaseCooldown, mods.cd);
+    public float Speed    => StatBlock.Apply(BaseSpeed,    mods.speed);
+    public bool  IsReady  => Time.time >= lastCast + Cooldown;
 
-    public float GetCooldown()
+    public IEnumerator TryCast(Vector3 from, Vector3 to)
     {
-        return 0.75f;
-    }
-
-    public virtual int GetIcon()
-    {
-        return 0;
-    }
-
-    public bool IsReady()
-    {
-        return (last_cast + GetCooldown() < Time.time);
-    }
-
-    public virtual IEnumerator Cast(Vector3 where, Vector3 target, Hittable.Team team)
-    {
-        this.team = team;
-        GameManager.Instance.projectileManager.CreateProjectile(0, "straight", where, target - where, 15f, OnHit);
-        yield return new WaitForEndOfFrame();
-    }
-
-    void OnHit(Hittable other, Vector3 impact)
-    {
-        if (other.team != team)
+        Debug.Log($"[Spell] TryCast {DisplayName}: IsReady={IsReady}, owner.mana={owner.mana}, cost={Mana}");
+        if (!IsReady || owner.mana < Mana)
         {
-            other.Damage(new Damage(GetDamage(), Damage.Type.ARCANE));
+            Debug.Log($"[Spell] TryCast aborted ({(!IsReady ? "cooldown" : "no mana")})");
+            yield break;
         }
-
+        owner.mana -= Mathf.RoundToInt(Mana);
+        lastCast = Time.time;
+        Debug.Log($"[Spell] TryCast proceeding: spent {(int)Mana} mana, new mana={owner.mana}");
+        yield return Cast(from, to);
     }
 
+    protected abstract IEnumerator Cast(Vector3 from, Vector3 to);
+
+    public virtual void LoadAttributes(Newtonsoft.Json.Linq.JObject j, Dictionary<string,float> vars) { }
 }

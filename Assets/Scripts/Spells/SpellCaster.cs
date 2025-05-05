@@ -2,41 +2,50 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-public class SpellCaster 
+public class SpellCaster : MonoBehaviour
 {
-    public int mana;
+    [Header("Mana Settings")]
     public int max_mana;
+    public int mana;
     public int mana_reg;
-    public Hittable.Team team;
-    public Spell spell;
 
-    public IEnumerator ManaRegeneration()
+    [Header("Team")]
+    public Hittable.Team team;
+
+    [Header("Spells")]
+    public int spellPower;
+    public List<Spell> spells = new(4);
+
+    void Awake()
+    {
+        StartCoroutine(ManaRegeneration());
+        var builder = new SpellBuilder();
+        spells.Add(builder.Build(this));
+        while (spells.Count < 4)
+            spells.Add(null);
+    }
+
+    IEnumerator ManaRegeneration()
     {
         while (true)
         {
-            mana += mana_reg;
-            mana = Mathf.Min(mana, max_mana);
-            yield return new WaitForSeconds(1);
+            yield return new WaitForSeconds(1f);
+            mana = Mathf.Min(max_mana, mana + mana_reg);
         }
     }
 
-    public SpellCaster(int mana, int mana_reg, Hittable.Team team)
+    public IEnumerator CastSlot(int slot, Vector3 from, Vector3 to)
     {
-        this.mana = mana;
-        this.max_mana = mana;
-        this.mana_reg = mana_reg;
-        this.team = team;
-        spell = new SpellBuilder().Build(this);
-    }
+        if (slot < 0 || slot >= spells.Count) yield break;
 
-    public IEnumerator Cast(Vector3 where, Vector3 target)
-    {        
-        if (mana >= spell.GetManaCost() && spell.IsReady())
+        Spell s = spells[slot];
+        if (s == null)
         {
-            mana -= spell.GetManaCost();
-            yield return spell.Cast(where, target, team);
+            Debug.LogWarning($"[SpellCaster] No spell in slot {slot}");
+            yield break;
         }
-        yield break;
-    }
 
+        Debug.Log($"[SpellCaster] Slot {slot} -> TryCast \"{s.DisplayName}\" (mana={mana}, cost={s.Mana}, ready={s.IsReady})");
+        yield return s.TryCast(from, to);
+    }
 }
