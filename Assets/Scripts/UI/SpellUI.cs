@@ -1,29 +1,58 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Linq;
 
 public class SpellUI : MonoBehaviour
 {
-    public GameObject          icon;
-    public RectTransform       cooldown;
-    public TextMeshProUGUI     manacost;
-    public TextMeshProUGUI     damage;
-    public Spell               spell;
+    public GameObject      icon;
+    public RectTransform   cooldown;
+    public TextMeshProUGUI manacost;
+    public TextMeshProUGUI damage;
+    public Spell           spell;
 
     float lastText;
     const float UPDATE_DELAY = 1f;
 
     void Awake()
     {
-        // Auto‑find if left unassigned in Inspector
+        // Auto-find the cooldown bar if left unassigned:
         if (cooldown == null)
-            cooldown = transform.Find("Cooldown")?.GetComponent<RectTransform>();
+        {
+            var allRects = GetComponentsInChildren<RectTransform>();
+            cooldown = allRects
+                .FirstOrDefault(rt => rt.name.ToLower().Contains("cool"));
+            if (cooldown == null)
+                Debug.LogError($"[{name}] SpellUI: no child with 'cool' in its name!");
+            else
+                Debug.Log($"[{name}] SpellUI bound cooldown to '{cooldown.name}'");
+        }
+
+        // You can do the same for manacost and damage if you like:
         if (manacost == null)
-            manacost = transform.Find("Manacost")?.GetComponent<TextMeshProUGUI>();
+        {
+            manacost = GetComponentsInChildren<TextMeshProUGUI>()
+                .FirstOrDefault(t => t.name.ToLower().Contains("mana"));
+            if (manacost == null)
+                Debug.LogError($"[{name}] SpellUI: no child with 'mana' in its name!");
+        }
         if (damage == null)
-            damage   = transform.Find("Damage")?.GetComponent<TextMeshProUGUI>();
+        {
+            damage = GetComponentsInChildren<TextMeshProUGUI>()
+                .FirstOrDefault(t => t.name.ToLower().Contains("dmg") 
+                                   || t.name.ToLower().Contains("damage"));
+            if (damage == null)
+                Debug.LogError($"[{name}] SpellUI: no child with 'damage' in its name!");
+        }
         if (icon == null)
-            icon     = transform.Find("Icon")?.gameObject;
+        {
+            var imgGO = transform
+                .GetComponentsInChildren<Image>()
+                .Select(i => i.gameObject)
+                .FirstOrDefault(go => go.name.ToLower().Contains("icon"));
+            if (imgGO != null) icon = imgGO;
+            else Debug.LogWarning($"[{name}] SpellUI: could not auto‑find Icon");
+        }
     }
 
     void Update()
@@ -33,10 +62,8 @@ public class SpellUI : MonoBehaviour
         // update text once per second
         if (Time.time > lastText + UPDATE_DELAY)
         {
-            if (manacost != null)
-                manacost.text = Mathf.RoundToInt(spell.Mana).ToString();
-            if (damage != null)
-                damage.text   = Mathf.RoundToInt(spell.Damage).ToString();
+            if (manacost != null) manacost.text = Mathf.RoundToInt(spell.Mana).ToString();
+            if (damage   != null) damage.text   = Mathf.RoundToInt(spell.Damage).ToString();
             lastText = Time.time;
         }
 
@@ -48,10 +75,10 @@ public class SpellUI : MonoBehaviour
             cooldown.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 48f * pct);
         }
 
-        // update icon
+        // update icon image
         if (icon != null)
         {
-            Image img = icon.GetComponent<Image>();
+            var img = icon.GetComponent<Image>();
             GameManager.Instance.spellIconManager.PlaceSprite(spell.IconIndex, img);
         }
     }
@@ -59,9 +86,10 @@ public class SpellUI : MonoBehaviour
     public void SetSpell(Spell s)
     {
         spell = s;
-        // immediately draw icon
         if (spell != null && icon != null)
-            GameManager.Instance.spellIconManager.PlaceSprite(spell.IconIndex,
-                icon.GetComponent<Image>());
+        {
+            var img = icon.GetComponent<Image>();
+            GameManager.Instance.spellIconManager.PlaceSprite(spell.IconIndex, img);
+        }
     }
 }
