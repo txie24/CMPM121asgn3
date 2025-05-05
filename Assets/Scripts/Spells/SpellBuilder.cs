@@ -5,10 +5,11 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Builds random Spell chains by instantiating from the global namespace
+/// (currently only ArcaneBolt is supported)
 /// </summary>
 public class SpellBuilder
 {
-    private readonly Dictionary<string,JObject> catalog;
+    private readonly Dictionary<string, JObject> catalog;
     private readonly System.Random rng = new System.Random();
 
     public SpellBuilder()
@@ -17,28 +18,24 @@ public class SpellBuilder
         if (ta == null)
         {
             Debug.LogError("SpellBuilder: spells.json not found in Resources!");
-            catalog = new Dictionary<string,JObject>();
+            catalog = new Dictionary<string, JObject>();
         }
         else
         {
-            catalog = JsonConvert.DeserializeObject<Dictionary<string,JObject>>(ta.text);
+            catalog = JsonConvert.DeserializeObject<Dictionary<string, JObject>>(ta.text);
             Debug.Log($"SpellBuilder: Loaded {catalog.Count} spell definitions.");
         }
     }
 
     /// <summary>
-    /// Always returns at least an ArcaneBolt, possibly wrapped in a DamageAmp.
-    /// Fully qualifies the class names so the compiler can find them.
+    /// Always returns at least an ArcaneBolt.
     /// </summary>
     public Spell Build(SpellCaster owner)
     {
-        // force lookup in the global namespace
+        // instantiate the base spell
         Spell s = new global::ArcaneBolt(owner);
 
-        // 30% chance to wrap in a DamageAmp
-        if (rng.NextDouble() < 0.3)
-            s = new global::DamageAmp(s);
-
+        // TODO: once you have more modifiers/base spells, you can extend this.
         return s;
     }
 }
