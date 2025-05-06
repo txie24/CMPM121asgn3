@@ -1,25 +1,43 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 public sealed class DamageMagnifier : ModifierSpell
 {
+    private float damageMultiplier = 1.5f;
+    private float manaMultiplier = 1.5f;
+    private string modifierName = "damage-amplified";
+    private string modifierDescription = "Increased damage and increased mana cost.";
+    
     public DamageMagnifier(Spell inner) : base(inner) { }
 
-    protected override string Suffix => "Damage Magnifier";
+    protected override string Suffix => modifierName;
+
+    public override void LoadAttributes(JObject j, Dictionary<string,float> vars)
+    {
+        base.LoadAttributes(j, vars);
+        
+        modifierName = j["name"]?.Value<string>() ?? "damage-amplified";
+        modifierDescription = j["description"]?.Value<string>() ?? "Increased damage and increased mana cost.";
+        
+        if (j["damage_multiplier"] != null)
+        {
+            string expr = j["damage_multiplier"].Value<string>();
+            damageMultiplier = RPNEvaluator.EvaluateFloat(expr, vars);
+        }
+        
+        if (j["mana_multiplier"] != null)
+        {
+            string expr = j["mana_multiplier"].Value<string>();
+            manaMultiplier = RPNEvaluator.EvaluateFloat(expr, vars);
+        }
+    }
 
     protected override void InjectMods(StatBlock mods)
     {
-        // 增加伤害(乘法修改)
-        mods.damage.Add(new ValueMod(ModOp.Mul, 1.5f));
-        
-        // 增加魔法消耗(乘法修改)
-        mods.mana.Add(new ValueMod(ModOp.Mul, 1.25f));
-    }
-
-    protected override IEnumerator Cast(Vector3 from, Vector3 to)
-    {
-        // 应用修改器后调用内部法术
-        InjectMods(inner.mods);
-        yield return inner.TryCast(from, to);
+        // 使用从JSON加载的值
+        mods.damage.Add(new ValueMod(ModOp.Mul, damageMultiplier));
+        mods.mana.Add(new ValueMod(ModOp.Mul, manaMultiplier));
     }
 }

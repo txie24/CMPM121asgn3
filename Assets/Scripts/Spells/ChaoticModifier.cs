@@ -1,29 +1,40 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 public sealed class ChaoticModifier : ModifierSpell
 {
+    private float damageMultiplier = 1.5f;
+    private string projectileTrajectory = "spiraling";
+    private string modifierName = "chaotic";
+    private string modifierDescription = "Significantly increased damage, but projectile is spiraling.";
+    
     public ChaoticModifier(Spell inner) : base(inner) { }
 
-    protected override string Suffix => "Chaotic";
+    protected override string Suffix => modifierName;
+
+    public override void LoadAttributes(JObject j, Dictionary<string,float> vars)
+    {
+        base.LoadAttributes(j, vars);
+        
+        modifierName = j["name"]?.Value<string>() ?? "chaotic";
+        modifierDescription = j["description"]?.Value<string>() ?? "Significantly increased damage, but projectile is spiraling.";
+        
+        if (j["damage_multiplier"] != null)
+        {
+            string expr = j["damage_multiplier"].Value<string>();
+            damageMultiplier = RPNEvaluator.EvaluateFloat(expr, vars);
+        }
+        
+        projectileTrajectory = j["projectile_trajectory"]?.Value<string>() ?? "spiraling";
+    }
 
     protected override void InjectMods(StatBlock mods)
     {
-        // 大幅增加伤害
-        mods.damage.Add(new ValueMod(ModOp.Mul, 2.0f));
+        // 增加伤害
+        mods.damage.Add(new ValueMod(ModOp.Mul, damageMultiplier));
         
-        // 由于实现限制，可能无法直接修改投射物轨迹类型
-    }
-
-    protected override IEnumerator Cast(Vector3 from, Vector3 to)
-    {
-        // 应用修改器后调用内部法术
-        InjectMods(inner.mods);
-        
-        // 这里应该修改投射物轨迹为spiraling，但当前实现可能无法做到
-        // 在实际实现中，您可能需要修改ProjectileManager等代码来支持轨迹修改
-        Debug.Log("[ChaoticModifier] 应用混沌效果，增加伤害并使投射物螺旋移动");
-        
-        yield return inner.TryCast(from, to);
+        // 注意：目前无法直接修改轨迹类型，这需要在Cast中处理
     }
 }

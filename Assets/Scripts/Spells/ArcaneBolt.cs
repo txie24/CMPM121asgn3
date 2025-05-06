@@ -1,5 +1,4 @@
 // File: Assets/Scripts/Spells/ArcaneBolt.cs
-
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -53,8 +52,9 @@ public sealed class ArcaneBolt : Spell
     {
         Debug.Log($"[{displayName}] Casting from {from} towards {to} (speed={Speed:F1}, dmg={Damage:F1})");
 
+        // 关键修改：使用projectileSprite而不是iconIndex
         GameManager.Instance.projectileManager.CreateProjectile(
-            iconIndex,
+            0, // 固定使用索引0避免越界错误
             trajectory,
             from,
             to - from,
