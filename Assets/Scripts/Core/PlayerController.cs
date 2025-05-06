@@ -46,11 +46,36 @@ public class PlayerController : MonoBehaviour
         healthui.SetHealth(hp);
         manaui .SetSpellCaster(spellcaster);
 
-        // populate all four SpellUI slots from spellcaster.spells
-        spellui .SetSpell(spellcaster.spells.Count > 0 ? spellcaster.spells[0] : null);
+        // Update all spell UI slots
+        UpdateSpellUI();
+    }
+
+    public void UpdateSpellUI()
+    {
+        // Update all spell UI slots from spellcaster.spells
+        spellui?.SetSpell(spellcaster.spells.Count > 0 ? spellcaster.spells[0] : null);
         spellui2?.SetSpell(spellcaster.spells.Count > 1 ? spellcaster.spells[1] : null);
         spellui3?.SetSpell(spellcaster.spells.Count > 2 ? spellcaster.spells[2] : null);
         spellui4?.SetSpell(spellcaster.spells.Count > 3 ? spellcaster.spells[3] : null);
+        
+        // Make sure we're showing/hiding the correct UI elements
+        ShowOrHideSpellUI();
+    }
+    
+    private void ShowOrHideSpellUI()
+    {
+        // Show/hide the UI based on whether there's a spell in the slot
+        if (spellui != null && spellui.gameObject != null)
+            spellui.gameObject.SetActive(spellcaster.spells.Count > 0 && spellcaster.spells[0] != null);
+            
+        if (spellui2 != null && spellui2.gameObject != null)
+            spellui2.gameObject.SetActive(spellcaster.spells.Count > 1 && spellcaster.spells[1] != null);
+            
+        if (spellui3 != null && spellui3.gameObject != null)
+            spellui3.gameObject.SetActive(spellcaster.spells.Count > 2 && spellcaster.spells[2] != null);
+            
+        if (spellui4 != null && spellui4.gameObject != null)
+            spellui4.gameObject.SetActive(spellcaster.spells.Count > 3 && spellcaster.spells[3] != null);
     }
 
     void OnAttack(InputValue value)
@@ -63,7 +88,15 @@ public class PlayerController : MonoBehaviour
         Vector2 ms = Mouse.current.position.ReadValue();
         Vector3 mw = Camera.main.ScreenToWorldPoint(ms);
         mw.z = 0;
-        StartCoroutine(spellcaster.CastSlot(0, transform.position, mw));
+        
+        // Cast all available spells at once
+        for (int i = 0; i < spellcaster.spells.Count; i++)
+        {
+            if (spellcaster.spells[i] != null)
+            {
+                StartCoroutine(spellcaster.CastSlot(i, transform.position, mw));
+            }
+        }
     }
 
     void OnMove(InputValue value)

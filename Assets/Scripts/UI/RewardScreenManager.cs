@@ -33,10 +33,10 @@ public class RewardScreenManager : MonoBehaviour
     {
         spawner = Object.FindFirstObjectByType<EnemySpawner>();
         
-        // 隐藏奖励界面
+        // Hide reward UI initially
         if (rewardUI != null) rewardUI.SetActive(false);
         
-        // 绑定按钮事件
+        // Hook up button events
         if (acceptSpellButton != null) acceptSpellButton.onClick.AddListener(AcceptSpell);
         if (nextWaveButton != null) nextWaveButton.onClick.AddListener(OnNextWaveClicked);
         
@@ -69,7 +69,7 @@ public class RewardScreenManager : MonoBehaviour
     {
         yield return new WaitForSeconds(0.25f);
 
-        // 设置基本的奖励信息
+        // Set basic reward information
         if (titleText != null)
             titleText.text = "You Survived!";
 
@@ -82,14 +82,14 @@ public class RewardScreenManager : MonoBehaviour
         if (enemiesKilledText != null)
             enemiesKilledText.text = $"Enemies Killed: {spawner.lastWaveEnemyCount}";
             
-        // 生成随机法术奖励
+        // Generate random spell reward
         GenerateSpellReward();
             
-        // 显示奖励UI
+        // Show reward UI
         if (rewardUI != null)
             rewardUI.SetActive(true);
 
-        // 启用按钮
+        // Enable buttons
         if (acceptSpellButton != null)
             acceptSpellButton.interactable = true;
         if (nextWaveButton != null)
@@ -98,21 +98,21 @@ public class RewardScreenManager : MonoBehaviour
     
     void GenerateSpellReward()
     {
-        // 获取玩家的SpellCaster组件
+        // Get player's SpellCaster component
         if (playerSpellCaster == null && GameManager.Instance.player != null)
             playerSpellCaster = GameManager.Instance.player.GetComponent<SpellCaster>();
             
         if (playerSpellCaster == null)
         {
-            Debug.LogError("无法找到玩家的SpellCaster组件");
+            Debug.LogError("Cannot find player's SpellCaster component");
             return;
         }
         
-        // 使用SpellBuilder生成随机法术
+        // Use SpellBuilder to generate a random spell
         SpellBuilder builder = new SpellBuilder();
         offeredSpell = builder.Build(playerSpellCaster);
         
-        // 更新UI显示
+        // Update UI display
         UpdateSpellRewardUI(offeredSpell);
     }
     
@@ -120,32 +120,32 @@ public class RewardScreenManager : MonoBehaviour
     {
         if (spell == null) return;
         
-        // 设置法术图标
+        // Set spell icon
         if (spellIcon != null && GameManager.Instance.spellIconManager != null)
         {
             GameManager.Instance.spellIconManager.PlaceSprite(spell.IconIndex, spellIcon);
         }
         
-        // 设置法术名称
+        // Set spell name
         if (spellNameText != null)
         {
             spellNameText.text = spell.DisplayName;
         }
         
-        // 设置法术描述
+        // Set spell description
         if (spellDescriptionText != null)
         {
             string description = GetSpellDescription(spell);
             spellDescriptionText.text = description;
         }
         
-        // 设置伤害值
+        // Set damage value
         if (damageValueText != null)
         {
             damageValueText.text = Mathf.RoundToInt(spell.Damage).ToString();
         }
         
-        // 设置魔法消耗
+        // Set mana cost
         if (manaValueText != null)
         {
             manaValueText.text = Mathf.RoundToInt(spell.Mana).ToString();
@@ -154,97 +154,113 @@ public class RewardScreenManager : MonoBehaviour
     
     string GetSpellDescription(Spell spell)
     {
-        // 根据法术类型返回适当的描述
+        // Return appropriate description based on spell type
         if (spell is ModifierSpell)
         {
-            return "修改了基础法术的效果"; // 避免使用受保护的Suffix属性
+            return "Modified spell effect";
         }
         else if (spell is ArcaneBolt)
         {
-            return "一个奥术能量弹，造成中等伤害";
+            return "An arcane energy bolt that deals medium damage";
         }
         else if (spell is ArcaneSpray)
         {
-            return "发射多个快速但短命的投射物，每个造成少量伤害";
+            return "Fires multiple fast but short-lived projectiles, each dealing little damage";
         }
         else if (spell is MagicMissile)
         {
-            return "一个追踪敌人的魔法飞弹";
+            return "A homing magic missile";
         }
         else if (spell is ArcaneBlast)
         {
-            return "发射一个会在击中敌人后爆炸的奥术弹，生成多个小型弹片";
+            return "Fires an arcane projectile that explodes on impact, generating smaller fragments";
         }
         
-        // 针对其他法术类型添加更多描述
+        // Add more descriptions for other spell types
         
-        return "一个神秘的法术";
+        return "A mysterious spell";
     }
     
     void AcceptSpell()
     {
         if (offeredSpell == null || playerSpellCaster == null) 
         {
-            Debug.LogWarning("无法接受法术：法术或玩家法术施放者为空");
+            Debug.LogWarning("Cannot accept spell: spell or player's spell caster is null");
             return;
         }
         
-        Debug.Log($"接受法术: {offeredSpell.DisplayName}");
+        Debug.Log($"Accepting spell: {offeredSpell.DisplayName}");
         
-        // 添加法术到玩家法术栏或替换现有法术
-        if (playerSpellCaster.spells.Count < 4)
+        // Find the first available slot
+        int availableSlot = -1;
+        for (int i = 0; i < 4; i++)
         {
-            // 添加新法术
-            playerSpellCaster.spells.Add(offeredSpell);
-        }
-        else
-        {
-            // 替换第一个法术（这里可以扩展为让玩家选择替换哪个法术）
-            playerSpellCaster.spells[0] = offeredSpell;
+            // Make sure we have enough slots in the list
+            if (i >= playerSpellCaster.spells.Count)
+            {
+                playerSpellCaster.spells.Add(null);
+            }
+            
+            if (playerSpellCaster.spells[i] == null)
+            {
+                availableSlot = i;
+                break;
+            }
         }
         
-        // 更新法术UI
+        if (availableSlot == -1)
+        {
+            Debug.Log("All spell slots are full. Player needs to drop a spell first.");
+            // Could show a message to the player here
+            return;
+        }
+        
+        // Add the new spell to the available slot
+        playerSpellCaster.spells[availableSlot] = offeredSpell;
+        Debug.Log($"Added {offeredSpell.DisplayName} to slot {availableSlot}");
+        
+        // Update all the spell UI slots
         UpdatePlayerSpellUI();
         
-        // 进入下一波
+        // Proceed to next wave
         OnNextWaveClicked();
     }
     
     void UpdatePlayerSpellUI()
     {
-        // 修复警告：使用FindFirstObjectByType代替FindObjectOfType
-        SpellUIContainer container = Object.FindFirstObjectByType<SpellUIContainer>();
-        if (container != null && container.spellUIs != null)
+        // Find the SpellUIContainer
+        SpellUIContainer container = FindObjectOfType<SpellUIContainer>();
+        if (container != null)
         {
-            // 更新所有法术UI槽
-            for (int i = 0; i < playerSpellCaster.spells.Count && i < container.spellUIs.Length; i++)
+            // Update the container's UI
+            container.UpdateSpellUIs();
+        }
+        else
+        {
+            Debug.LogWarning("Could not find SpellUIContainer");
+            
+            // Fallback: use the PlayerController directly
+            PlayerController playerController = GameManager.Instance.player.GetComponent<PlayerController>();
+            if (playerController != null)
             {
-                if (playerSpellCaster.spells[i] != null)
-                {
-                    container.spellUIs[i].SetActive(true);
-                    SpellUI spellUI = container.spellUIs[i].GetComponent<SpellUI>();
-                    if (spellUI != null)
-                    {
-                        spellUI.SetSpell(playerSpellCaster.spells[i]);
-                    }
-                }
+                playerController.UpdateSpellUI();
             }
         }
     }
 
     void OnNextWaveClicked()
     {
-        // 隐藏奖励界面
+        // Hide reward UI
         if (rewardUI != null)
             rewardUI.SetActive(false);
 
-        // 禁用按钮，防止多次点击
+        // Disable buttons to prevent multiple clicks
         if (acceptSpellButton != null)
             acceptSpellButton.interactable = false;
         if (nextWaveButton != null)
             nextWaveButton.interactable = false;
 
-        // 开始下一波
+        // Start next wave
         if (spawner != null)
             spawner.NextWave();
     }

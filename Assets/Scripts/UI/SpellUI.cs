@@ -92,4 +92,29 @@ public class SpellUI : MonoBehaviour
             GameManager.Instance.spellIconManager.PlaceSprite(spell.IconIndex, img);
         }
     }
+    public void DropSpell() {
+    // Find the index of this spell in the spellcaster
+    PlayerController playerController = FindObjectOfType<PlayerController>();
+    if (playerController != null && playerController.spellcaster != null)
+    {
+        // Find which slot this UI represents
+        int slotIndex = -1;
+        if (this == playerController.spellui) slotIndex = 0;
+        else if (this == playerController.spellui2) slotIndex = 1;
+        else if (this == playerController.spellui3) slotIndex = 2;
+        else if (this == playerController.spellui4) slotIndex = 3;
+        
+        if (slotIndex >= 0 && slotIndex < playerController.spellcaster.spells.Count)
+        {
+            Debug.Log($"Dropping spell from slot {slotIndex}: {playerController.spellcaster.spells[slotIndex]?.DisplayName}");
+            playerController.spellcaster.spells[slotIndex] = null;
+            
+            // Hide this UI slot
+            gameObject.SetActive(false);
+            
+            // Clear this UI
+            spell = null;
+        }
+    }
+}
 }
