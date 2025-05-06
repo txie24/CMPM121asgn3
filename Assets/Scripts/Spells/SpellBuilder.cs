@@ -4,80 +4,110 @@ using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 
 /// <summary>
-/// 构建随机法术链，通过实例化全局命名空间中的法术类
+/// Builds a random Spell by instantiating global‐namespace spell classes
+/// and loading all numeric stats from spells.json via RPN.
+/// Ensures wave 1 is always a plain Arcane Bolt.
 /// </summary>
 public class SpellBuilder
 {
     private readonly Dictionary<string, JObject> catalog;
     private readonly System.Random rng = new System.Random();
 
+    // JSON keys for base spells and modifiers
+    static readonly string[] BaseKeys = {
+        "arcane_bolt",
+        "arcane_spray",
+        "magic_missile",
+        "arcane_explosion"
+    };
+    static readonly string[] ModifierKeys = {
+        "splitter",
+        "doubler",
+        "damage_magnifier",
+        "speed_modifier",
+        "chaotic_modifier",
+        "homing_modifier"
+    };
+
     public SpellBuilder()
     {
         var ta = Resources.Load<TextAsset>("spells");
         if (ta == null)
         {
-            Debug.LogError("SpellBuilder: spells.json not found in Resources!");
+            Debug.LogError("SpellBuilder: spells.json not found!");
             catalog = new Dictionary<string, JObject>();
         }
         else
         {
-            catalog = JsonConvert.DeserializeObject<Dictionary<string, JObject>>(ta.text);
-            Debug.Log($"SpellBuilder: Loaded {catalog.Count} spell definitions.");
+            catalog = JsonConvert.
+                DeserializeObject<Dictionary<string, JObject>>(ta.text);
+            Debug.Log($"SpellBuilder loaded {catalog.Count} spells.");
         }
     }
 
-    /// <summary>
-    /// 生成一个随机法术，可能带有修饰符
-    /// </summary>
     public Spell Build(SpellCaster owner)
     {
-        // 选择一个基础法术
-        Spell baseSpell = CreateRandomBaseSpell(owner);
-        
-        // 随机决定是否添加修饰符，以及添加多少个
-        int modifierCount = Random.Range(0, 3); // 0-2个修饰符
-        
-        // 应用修饰符
-        Spell result = baseSpell;
-        for (int i = 0; i < modifierCount; i++)
+        // grab wave from the spawner
+        var spawner = Object.FindObjectOfType<EnemySpawner>();
+        int wave = spawner != null ? spawner.currentWave : 1;
+
+        // RPN vars
+        var vars = new Dictionary<string,float> {
+            { "power", owner.spellPower },
+            { "wave",  wave }
+        };
+
+        // wave 1: always a plain ArcaneBolt
+        if (wave == 1)
         {
-            result = ApplyRandomModifier(result);
+            var bolt = new ArcaneBolt(owner);
+            if (catalog.TryGetValue("arcane_bolt", out var jd))
+                bolt.LoadAttributes(jd, vars);
+            return bolt;
         }
-        
-        return result;
+
+        // pick random base
+        int b = rng.Next(BaseKeys.Length);
+        Spell s = CreateRandomBaseSpell(owner, b);
+        if (catalog.TryGetValue(BaseKeys[b], out var bd))
+            s.LoadAttributes(bd, vars);
+
+        // wrap with 0–2 random modifiers
+        int mods = rng.Next(0, 3);
+        for (int i = 0; i < mods; i++)
+        {
+            int m = rng.Next(ModifierKeys.Length);
+            s = ApplyRandomModifier(s, m);
+            if (catalog.TryGetValue(ModifierKeys[m], out var md))
+                s.LoadAttributes(md, vars);
+        }
+
+        return s;
     }
-    
-    private Spell CreateRandomBaseSpell(SpellCaster owner)
+
+    private Spell CreateRandomBaseSpell(SpellCaster owner, int i)
     {
-        // 随机选择一个基础法术类型
-        int spellType = Random.Range(0, 4); // 0-3，对应4种基础法术
-        
-        switch (spellType)
+        switch (i)
         {
             case 0: return new ArcaneBolt(owner);
             case 1: return new ArcaneSpray(owner);
             case 2: return new MagicMissile(owner);
             case 3: return new ArcaneExplosion(owner);
-            // 如果你添加了自定义基础法术，也在这里添加一个case
-            default: return new ArcaneBolt(owner); // 默认使用ArcaneBolt
+            default: return new ArcaneBolt(owner);
         }
     }
-    
-    private Spell ApplyRandomModifier(Spell spell)
+
+    private Spell ApplyRandomModifier(Spell inner, int i)
     {
-        // 随机选择一个修饰符类型
-        int modType = Random.Range(0, 6); // 0-5，对应6种修饰符
-        
-        switch (modType)
+        switch (i)
         {
-            case 0: return new Splitter(spell);         // 注意这里的类名变化
-            case 1: return new Doubler(spell);          // 注意这里的类名变化
-            case 2: return new DamageMagnifier(spell);  // 注意这里的类名变化
-            case 3: return new SpeedModifier(spell);
-            case 4: return new ChaoticModifier(spell);
-            case 5: return new HomingModifier(spell);
-            // 如果你添加了自定义修饰符，也在这里添加case
-            default: return spell; // 如果出现问题，返回原始法术
+            case 0: return new Splitter(inner);
+            case 1: return new Doubler(inner);
+            case 2: return new DamageMagnifier(inner);
+            case 3: return new SpeedModifier(inner);
+            case 4: return new ChaoticModifier(inner);
+            case 5: return new HomingModifier(inner);
+            default: return inner;
         }
     }
 }
