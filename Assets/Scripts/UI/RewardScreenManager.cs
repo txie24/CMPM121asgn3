@@ -191,6 +191,28 @@ public class RewardScreenManager : MonoBehaviour
         
         Debug.Log($"Accepting spell: {offeredSpell.DisplayName}");
         
+        // Check if the spell already exists in any slot
+        bool isDuplicate = false;
+        for (int i = 0; i < playerSpellCaster.spells.Count; i++)
+        {
+            if (playerSpellCaster.spells[i] != null && 
+                playerSpellCaster.spells[i].DisplayName == offeredSpell.DisplayName)
+            {
+                isDuplicate = true;
+                Debug.Log($"Spell {offeredSpell.DisplayName} already exists in slot {i}. Not adding duplicate.");
+                break;
+            }
+        }
+        
+        if (isDuplicate)
+        {
+            // Optional: Show a message to the player that this is a duplicate spell
+            Debug.Log("Duplicate spell not added.");
+            // Proceed to next wave anyway since the player accepted the reward
+            OnNextWaveClicked();
+            return;
+        }
+        
         // Find the first available slot
         int availableSlot = -1;
         for (int i = 0; i < 4; i++)

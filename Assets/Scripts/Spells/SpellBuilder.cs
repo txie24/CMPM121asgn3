@@ -66,8 +66,10 @@ public class SpellBuilder
             return bolt;
         }
 
-        // pick random base spell - fix: ensure true randomness by using a new seed
-        System.Random localRng = new System.Random(System.DateTime.Now.Millisecond);
+        // Ensure true randomness with a new seed based on current time
+        System.Random localRng = new System.Random(System.DateTime.Now.Millisecond + System.Environment.TickCount);
+        
+        // pick random base spell
         int b = localRng.Next(BaseKeys.Length);
         Debug.Log($"Selected base spell index: {b}, spell type: {BaseKeys[b]}");
         

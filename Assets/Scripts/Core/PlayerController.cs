@@ -53,10 +53,17 @@ public class PlayerController : MonoBehaviour
     public void UpdateSpellUI()
     {
         // Update all spell UI slots from spellcaster.spells
-        spellui?.SetSpell(spellcaster.spells.Count > 0 ? spellcaster.spells[0] : null);
-        spellui2?.SetSpell(spellcaster.spells.Count > 1 ? spellcaster.spells[1] : null);
-        spellui3?.SetSpell(spellcaster.spells.Count > 2 ? spellcaster.spells[2] : null);
-        spellui4?.SetSpell(spellcaster.spells.Count > 3 ? spellcaster.spells[3] : null);
+        if (spellui != null)
+            spellui.SetSpell(spellcaster.spells.Count > 0 ? spellcaster.spells[0] : null);
+        
+        if (spellui2 != null)
+            spellui2.SetSpell(spellcaster.spells.Count > 1 ? spellcaster.spells[1] : null);
+        
+        if (spellui3 != null)
+            spellui3.SetSpell(spellcaster.spells.Count > 2 ? spellcaster.spells[2] : null);
+        
+        if (spellui4 != null)
+            spellui4.SetSpell(spellcaster.spells.Count > 3 ? spellcaster.spells[3] : null);
         
         // Make sure we're showing/hiding the correct UI elements
         ShowOrHideSpellUI();
@@ -89,7 +96,7 @@ public class PlayerController : MonoBehaviour
         Vector3 mw = Camera.main.ScreenToWorldPoint(ms);
         mw.z = 0;
         
-        // Cast all available spells at once
+        // Cast only available spells with non-null slots
         for (int i = 0; i < spellcaster.spells.Count; i++)
         {
             if (spellcaster.spells[i] != null)
