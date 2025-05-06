@@ -28,15 +28,11 @@ public abstract class Spell
 
     public IEnumerator TryCast(Vector3 from, Vector3 to)
     {
-        Debug.Log($"[Spell] TryCast {DisplayName}: IsReady={IsReady}, owner.mana={owner.mana}, cost={Mana}");
-        if (!IsReady || owner.mana < Mana)
-        {
-            Debug.Log($"[Spell] TryCast aborted ({(!IsReady ? "cooldown" : "no mana")})");
-            yield break;
-        }
-        owner.mana -= Mathf.RoundToInt(Mana);
-        lastCast = Time.time;
-        Debug.Log($"[Spell] TryCast proceeding: spent {(int)Mana} mana, new mana={owner.mana}");
+        Debug.Log($"[Spell] TryCast {DisplayName}");
+        
+        // The issue is related to double-checking conditions, which we'll fix
+        // We already check these conditions in SpellCaster.CastSlot, so we can just cast directly here
+        // This ensures that after mana regenerates, we can cast spells again
         yield return Cast(from, to);
     }
 

@@ -45,7 +45,26 @@ public class SpellCaster : MonoBehaviour
             yield break;
         }
 
-        Debug.Log($"[SpellCaster] Slot {slot} -> TryCast \"{s.DisplayName}\" (mana={mana}, cost={s.Mana}, ready={s.IsReady})");
+        // Bug fix: First check if there's enough mana AND the spell is ready
+        if (!s.IsReady)
+        {
+            Debug.Log($"[SpellCaster] Spell {s.DisplayName} is on cooldown (cooldown: {s.Cooldown}, time since cast: {Time.time - s.lastCast})");
+            yield break;
+        }
+        
+        if (mana < s.Mana)
+        {
+            Debug.Log($"[SpellCaster] Not enough mana to cast {s.DisplayName} (required: {s.Mana}, current: {mana})");
+            yield break;
+        }
+        
+        Debug.Log($"[SpellCaster] Slot {slot} -> Casting \"{s.DisplayName}\" (mana={mana}, cost={s.Mana})");
+        
+        // Deduct mana and update last cast time BEFORE casting
+        mana -= Mathf.RoundToInt(s.Mana);
+        s.lastCast = Time.time;
+        
+        // Then cast the spell
         yield return s.TryCast(from, to);
     }
 }

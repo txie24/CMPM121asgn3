@@ -6,7 +6,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Builds a random Spell by instantiating global‐namespace spell classes
 /// and loading all numeric stats from spells.json via RPN.
-/// Ensures wave 1 is always a plain Arcane Bolt.
+/// Ensures wave 1 is always a plain Arcane Bolt.
 /// </summary>
 public class SpellBuilder
 {
@@ -18,15 +18,15 @@ public class SpellBuilder
         "arcane_bolt",
         "arcane_spray",
         "magic_missile",
-        "arcane_explosion"
+        "arcane_blast"
     };
     static readonly string[] ModifierKeys = {
         "splitter",
         "doubler",
-        "damage_magnifier",
-        "speed_modifier",
-        "chaotic_modifier",
-        "homing_modifier"
+        "damage_amp",
+        "speed_amp",
+        "chaos",
+        "homing"
     };
 
     public SpellBuilder()
@@ -57,7 +57,7 @@ public class SpellBuilder
             { "wave",  wave }
         };
 
-        // wave 1: always a plain ArcaneBolt
+        // wave 1: always a plain ArcaneBolt
         if (wave <= 1)
         {
             var bolt = new ArcaneBolt(owner);
@@ -66,22 +66,34 @@ public class SpellBuilder
             return bolt;
         }
 
-        // pick random base
-        int b = rng.Next(BaseKeys.Length);
+        // pick random base spell - fix: ensure true randomness by using a new seed
+        System.Random localRng = new System.Random(System.DateTime.Now.Millisecond);
+        int b = localRng.Next(BaseKeys.Length);
+        Debug.Log($"Selected base spell index: {b}, spell type: {BaseKeys[b]}");
+        
         Spell s = CreateRandomBaseSpell(owner, b);
         if (catalog.TryGetValue(BaseKeys[b], out var bd))
             s.LoadAttributes(bd, vars);
+        else
+            Debug.LogError($"Failed to find base spell: {BaseKeys[b]} in catalog");
 
         // wrap with 0–2 random modifiers
-        int mods = rng.Next(0, 3);
+        int mods = localRng.Next(3); // 0, 1, or 2 modifiers
+        Debug.Log($"Applying {mods} modifiers");
+        
         for (int i = 0; i < mods; i++)
         {
-            int m = rng.Next(ModifierKeys.Length);
+            int m = localRng.Next(ModifierKeys.Length);
+            Debug.Log($"Selected modifier index: {m}, modifier type: {ModifierKeys[m]}");
+            
             s = ApplyRandomModifier(s, m);
             if (catalog.TryGetValue(ModifierKeys[m], out var md))
                 s.LoadAttributes(md, vars);
+            else
+                Debug.LogError($"Failed to find modifier: {ModifierKeys[m]} in catalog");
         }
 
+        Debug.Log($"Final spell created: {s.DisplayName}");
         return s;
     }
 
