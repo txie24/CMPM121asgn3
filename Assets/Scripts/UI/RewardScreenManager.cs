@@ -171,7 +171,7 @@ public class RewardScreenManager : MonoBehaviour
         {
             return "一个追踪敌人的魔法飞弹";
         }
-        else if (spell is ArcaneExplosion)
+        else if (spell is ArcaneBlast)
         {
             return "发射一个会在击中敌人后爆炸的奥术弹，生成多个小型弹片";
         }

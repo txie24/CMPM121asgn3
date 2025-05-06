@@ -1,19 +1,21 @@
 // File: Assets/Scripts/Spells/ArcaneBolt.cs
+
 using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
 public sealed class ArcaneBolt : Spell
 {
-    // data from spells.json
+    // all fields are populated from JSON
     string displayName;
-    string description;
-    int iconIndex;
     float baseDamage;
+    Damage.Type damageType;
     float baseMana;
     float baseCooldown;
     float baseSpeed;
+    int iconIndex;
     string trajectory;
     int projectileSprite;
 
@@ -28,34 +30,42 @@ public sealed class ArcaneBolt : Spell
     protected override float BaseSpeed    => baseSpeed;
 
     /// <summary>
-    /// Reads everything from the JSON node for "arcane_bolt"
+    /// Expects the JObject for "arcane_bolt" (i.e. root["arcane_bolt"]).
     /// </summary>
     public override void LoadAttributes(JObject j, Dictionary<string,float> vars)
     {
-        // basic fields
+        // identity
         displayName = j["name"].Value<string>();
-        description = j["description"]?.Value<string>() ?? "";
         iconIndex   = j["icon"].Value<int>();
 
-        // stats (evaluate any RPN expressions)
-        baseDamage   = RPNEvaluator.EvaluateFloat(j["damage"]["amount"].Value<string>(), vars);
-        baseMana     = RPNEvaluator.EvaluateFloat(j["mana_cost"].Value<string>(), vars);
-        baseCooldown = RPNEvaluator.EvaluateFloat(j["cooldown"].Value<string>(), vars);
-        baseSpeed    = RPNEvaluator.EvaluateFloat(j["projectile"]["speed"].Value<string>(), vars);
+        // damage & type
+        baseDamage = RPNEvaluator.EvaluateFloat(
+            j["damage"]["amount"].Value<string>(), vars);
+        var dt = j["damage"]["type"].Value<string>();
+        // parse enum (case‑insensitive)
+        damageType = (Damage.Type)Enum.Parse(
+            typeof(Damage.Type), dt, true);
 
-        // projectile details
+        // mana + cooldown
+        baseMana     = RPNEvaluator.EvaluateFloat(
+            j["mana_cost"].Value<string>(), vars);
+        baseCooldown = RPNEvaluator.EvaluateFloat(
+            j["cooldown"].Value<string>(), vars);
+
+        // projectile
         trajectory       = j["projectile"]["trajectory"].Value<string>();
-        projectileSprite = j["projectile"]["sprite"]?.Value<int>() ?? 0;
+        baseSpeed        = RPNEvaluator.EvaluateFloat(
+            j["projectile"]["speed"].Value<string>(), vars);
+        projectileSprite = j["projectile"]["sprite"].Value<int>();
     }
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        Debug.Log($"[{displayName}] Casting from {from} towards {to} (speed={Speed:F1}, dmg={Damage:F1})");
+        Debug.Log($"[{displayName}] Casting ▶ dmg={Damage:F1} ({damageType}), mana={Mana:F1}, spd={Speed:F1}");
 
-        // 关键修改：使用projectileSprite而不是iconIndex
         GameManager.Instance.projectileManager.CreateProjectile(
-            0, // 固定使用索引0避免越界错误
-            trajectory,
+            projectileSprite, // from JSON
+            trajectory,       // from JSON
             from,
             to - from,
             Speed,
@@ -63,10 +73,10 @@ public sealed class ArcaneBolt : Spell
             {
                 if (hit.team != owner.team)
                 {
-                    int amt = Mathf.RoundToInt(Damage);
-                    var dmg = new global::Damage(amt, global::Damage.Type.ARCANE);
+                    int amt = Mathf.RoundToInt(this.Damage);
+                    var dmg = new global::Damage(amt, damageType);
                     hit.Damage(dmg);
-                    Debug.Log($"[{displayName}] Hit {hit.owner.name} for {amt} damage");
+                    Debug.Log($"[{displayName}] Hit {hit.owner.name} for {amt} ({damageType})");
                 }
             });
 

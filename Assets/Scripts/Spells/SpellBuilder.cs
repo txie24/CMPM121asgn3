@@ -48,7 +48,7 @@ public class SpellBuilder
     public Spell Build(SpellCaster owner)
     {
         // grab wave from the spawner
-        var spawner = Object.FindObjectOfType<EnemySpawner>();
+        var spawner = Object.FindFirstObjectByType<EnemySpawner>();
         int wave = spawner != null ? spawner.currentWave : 1;
 
         // RPN vars
@@ -60,8 +60,8 @@ public class SpellBuilder
         // wave 1: always a plain ArcaneBolt
         if (wave <= 1)
         {
-            var bolt = new ArcaneBolt(owner);
-            if (catalog.TryGetValue("arcane_bolt", out var jd))
+            var bolt = new ArcaneBlast(owner);
+            if (catalog.TryGetValue("arcane_blast", out var jd))
                 bolt.LoadAttributes(jd, vars);
             return bolt;
         }
@@ -92,7 +92,7 @@ public class SpellBuilder
             case 0: return new ArcaneBolt(owner);
             case 1: return new ArcaneSpray(owner);
             case 2: return new MagicMissile(owner);
-            case 3: return new ArcaneExplosion(owner);
+            case 3: return new ArcaneBlast(owner);
             default: return new ArcaneBolt(owner);
         }
     }

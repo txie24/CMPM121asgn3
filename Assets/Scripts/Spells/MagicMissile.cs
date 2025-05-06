@@ -15,7 +15,7 @@ public sealed class MagicMissile : Spell
     private float baseSpeed;
     private string trajectory;
     private int projectileSprite;
-    private float turnRate = 0.25f;
+    //private float turnRate = 0.25f;
 
     public MagicMissile(SpellCaster owner) : base(owner) { }
 

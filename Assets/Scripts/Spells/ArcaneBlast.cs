@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
-public sealed class ArcaneExplosion : Spell
+public sealed class ArcaneBlast : Spell
 {
     // 从JSON加载的属性
     private string displayName;
@@ -24,7 +24,7 @@ public sealed class ArcaneExplosion : Spell
     private string secondaryTrajectory;
     private int secondaryProjectileSprite;
 
-    public ArcaneExplosion(SpellCaster owner) : base(owner) { }
+    public ArcaneBlast(SpellCaster owner) : base(owner) { }
 
     public override string DisplayName => displayName;
     public override int    IconIndex    => iconIndex;

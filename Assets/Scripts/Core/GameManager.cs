@@ -51,7 +51,7 @@ public class GameManager
     public int totalDamageDealt = 0;
     public int totalDamageTaken = 0;
 
-    public int wavesCompleted = 0; // ✅ NEW
+    public int wavesCompleted = 0; 
 
     public void ResetGame()
     {
