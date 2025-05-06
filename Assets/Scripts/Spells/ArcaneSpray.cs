@@ -6,7 +6,7 @@ public sealed class ArcaneSpray : Spell
     public ArcaneSpray(SpellCaster owner) : base(owner) { }
 
     public override string DisplayName => "Arcane Spray";
-    public override int    IconIndex    => 1;
+    public override int    IconIndex    => 0;
 
     protected override float BaseDamage   => 5f;
     protected override float BaseMana     => 15f; 

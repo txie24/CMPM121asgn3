@@ -7,6 +7,10 @@ public class RewardScreenManager : MonoBehaviour
 {
     [Header("UI Elements")]
     public GameObject rewardUI;
+    public TextMeshProUGUI titleText;
+    public TextMeshProUGUI currentWaveText;
+    public TextMeshProUGUI nextWaveText;
+    public TextMeshProUGUI enemiesKilledText;
     
     [Header("Spell Reward UI")]
     public Image spellIcon;                  // 法术图标
@@ -30,7 +34,7 @@ public class RewardScreenManager : MonoBehaviour
         spawner = Object.FindFirstObjectByType<EnemySpawner>();
         
         // 隐藏奖励界面
-        // if (rewardUI != null) rewardUI.SetActive(false);
+        if (rewardUI != null) rewardUI.SetActive(false);
         
         // 绑定按钮事件
         if (acceptSpellButton != null) acceptSpellButton.onClick.AddListener(AcceptSpell);
@@ -64,6 +68,19 @@ public class RewardScreenManager : MonoBehaviour
     IEnumerator ShowRewardScreen()
     {
         yield return new WaitForSeconds(0.25f);
+
+        // 设置基本的奖励信息
+        if (titleText != null)
+            titleText.text = "You Survived!";
+
+        if (currentWaveText != null)
+            currentWaveText.text = $"Current Wave: {spawner.currentWave - 1}";
+
+        if (nextWaveText != null)
+            nextWaveText.text = $"Next Wave: {spawner.currentWave}";
+
+        if (enemiesKilledText != null)
+            enemiesKilledText.text = $"Enemies Killed: {spawner.lastWaveEnemyCount}";
             
         // 生成随机法术奖励
         GenerateSpellReward();
@@ -103,32 +120,32 @@ public class RewardScreenManager : MonoBehaviour
     {
         if (spell == null) return;
         
-        // 设置法术图标 - 从法术对象获取图标索引
+        // 设置法术图标
         if (spellIcon != null && GameManager.Instance.spellIconManager != null)
         {
             GameManager.Instance.spellIconManager.PlaceSprite(spell.IconIndex, spellIcon);
         }
         
-        // 设置法术名称 - 从法术对象获取名称
+        // 设置法术名称
         if (spellNameText != null)
         {
             spellNameText.text = spell.DisplayName;
         }
         
-        // 设置法术描述 - 根据法术类型获取描述
+        // 设置法术描述
         if (spellDescriptionText != null)
         {
             string description = GetSpellDescription(spell);
             spellDescriptionText.text = description;
         }
         
-        // 设置伤害值 - 直接从法术对象获取伤害值
+        // 设置伤害值
         if (damageValueText != null)
         {
             damageValueText.text = Mathf.RoundToInt(spell.Damage).ToString();
         }
         
-        // 设置魔法消耗 - 直接从法术对象获取魔法消耗值
+        // 设置魔法消耗
         if (manaValueText != null)
         {
             manaValueText.text = Mathf.RoundToInt(spell.Mana).ToString();
@@ -140,8 +157,7 @@ public class RewardScreenManager : MonoBehaviour
         // 根据法术类型返回适当的描述
         if (spell is ModifierSpell)
         {
-            // 这里由于无法访问 Suffix，我们可以根据修饰符的效果来描述
-            return "修改了基础法术的效果";
+            return "修改了基础法术的效果"; // 避免使用受保护的Suffix属性
         }
         else if (spell is ArcaneBolt)
         {
@@ -196,7 +212,7 @@ public class RewardScreenManager : MonoBehaviour
     
     void UpdatePlayerSpellUI()
     {
-        // 使用FindFirstObjectByType代替FindObjectOfType
+        // 修复警告：使用FindFirstObjectByType代替FindObjectOfType
         SpellUIContainer container = Object.FindFirstObjectByType<SpellUIContainer>();
         if (container != null && container.spellUIs != null)
         {

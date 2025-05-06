@@ -6,7 +6,7 @@ public sealed class MagicMissile : Spell
     public MagicMissile(SpellCaster owner) : base(owner) { }
 
     public override string DisplayName => "Magic Missile";
-    public override int    IconIndex    => 2;
+    public override int    IconIndex    => 0;
 
     protected override float BaseDamage   => 8f;
     protected override float BaseMana     => 10f;
