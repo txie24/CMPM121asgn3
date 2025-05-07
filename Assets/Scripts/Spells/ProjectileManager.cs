@@ -19,24 +19,24 @@ public class ProjectileManager : MonoBehaviour
 
     public void CreateProjectile(int which, string trajectory, Vector3 where, Vector3 direction, float speed, Action<Hittable,Vector3> onHit)
     {
-        // Add index safety check
+        // 添加索引安全检查
         if (which < 0 || which >= projectiles.Length)
         {
-            Debug.LogWarning($"ProjectileManager: Index {which} out of range, max is {projectiles.Length-1}, using index 0 instead.");
-            which = 0; // Use default value
+            Debug.LogWarning($"ProjectileManager: 索引 {which} 超出范围，最大值为 {projectiles.Length-1}，使用索引 0 代替。");
+            which = 0; // 使用默认值
         }
         
         GameObject new_projectile = Instantiate(projectiles[which], where + direction.normalized*1.1f, Quaternion.Euler(0,0,Mathf.Atan2(direction.y, direction.x)*Mathf.Rad2Deg));
         
-        // Create movement component and ensure non-null
+        // 创建移动组件并确保非空
         ProjectileMovement movement = MakeMovement(trajectory, speed);
         if (movement == null)
         {
-            Debug.LogWarning($"ProjectileManager: Unknown trajectory type '{trajectory}', using straight trajectory.");
+            Debug.LogWarning($"ProjectileManager: 未知轨迹类型 '{trajectory}'，使用直线轨迹。");
             movement = new StraightProjectileMovement(speed);
         }
         
-        // Set projectile controller
+        // 设置投射物控制器
         ProjectileController controller = new_projectile.GetComponent<ProjectileController>();
         controller.movement = movement;
         controller.OnHit += onHit;
@@ -44,24 +44,24 @@ public class ProjectileManager : MonoBehaviour
 
     public void CreateProjectile(int which, string trajectory, Vector3 where, Vector3 direction, float speed, Action<Hittable, Vector3> onHit, float lifetime)
     {
-        // Add index safety check
+        // 添加索引安全检查
         if (which < 0 || which >= projectiles.Length)
         {
-            Debug.LogWarning($"ProjectileManager: Index {which} out of range, max is {projectiles.Length-1}, using index 0 instead.");
-            which = 0; // Use default value
+            Debug.LogWarning($"ProjectileManager: 索引 {which} 超出范围，最大值为 {projectiles.Length-1}，使用索引 0 代替。");
+            which = 0; // 使用默认值
         }
         
-        GameObject new_projectile = Instantiate(projectiles[which], where + direction.normalized * 1.1f, Quaternion.Euler(0, 0, Mathf.Atan2(direction.y, direction.x) * Mathf.Deg2Rad));
+        GameObject new_projectile = Instantiate(projectiles[which], where + direction.normalized * 1.1f, Quaternion.Euler(0, 0, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg));
         
-        // Create movement component and ensure non-null
+        // 创建移动组件并确保非空
         ProjectileMovement movement = MakeMovement(trajectory, speed);
         if (movement == null)
         {
-            Debug.LogWarning($"ProjectileManager: Unknown trajectory type '{trajectory}', using straight trajectory.");
+            Debug.LogWarning($"ProjectileManager: 未知轨迹类型 '{trajectory}'，使用直线轨迹。");
             movement = new StraightProjectileMovement(speed);
         }
         
-        // Set projectile controller
+        // 设置投射物控制器
         ProjectileController controller = new_projectile.GetComponent<ProjectileController>();
         controller.movement = movement;
         controller.OnHit += onHit;
@@ -72,7 +72,7 @@ public class ProjectileManager : MonoBehaviour
     {
         if (string.IsNullOrEmpty(name))
         {
-            Debug.LogWarning("ProjectileManager: Trajectory name is empty, using straight trajectory.");
+            Debug.LogWarning("ProjectileManager: 轨迹名称为空，使用直线轨迹。");
             return new StraightProjectileMovement(speed);
         }
         
@@ -84,9 +84,8 @@ public class ProjectileManager : MonoBehaviour
                 return new HomingProjectileMovement(speed);
             case "spiraling":
                 return new SpiralingProjectileMovement(speed);
-            // You could add a combined homing+spiraling movement type here in the future
             default:
-                Debug.LogWarning($"ProjectileManager: Unknown trajectory type '{name}', using straight trajectory.");
+                Debug.LogWarning($"ProjectileManager: 未知轨迹类型 '{name}'，使用直线轨迹。");
                 return new StraightProjectileMovement(speed);
         }
     }

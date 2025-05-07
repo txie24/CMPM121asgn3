@@ -43,64 +43,65 @@ public sealed class HomingModifier : ModifierSpell
         mods.mana.Add(new ValueMod(ModOp.Add, manaAdder));
     }
     
-    protected override IEnumerator ModifierCast(Vector3 from, Vector3 to)
+    protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        Debug.Log($"[HomingModifier] ModifierCast() with homing projectile");
+        // Store the original mods
+        StatBlock originalMods = inner.mods;
+        
+        // Create and apply our mods
+        StatBlock ourMods = new StatBlock();
+        InjectMods(ourMods);
+        inner.mods = MergeStatBlocks(originalMods, ourMods);
+        
+        Debug.Log($"[HomingModifier] Casting homing spell with trajectory 'homing'");
         
         // Find the closest enemy for better targeting
         GameObject closestEnemy = GameManager.Instance.GetClosestEnemy(from);
         Vector3 targetPos = closestEnemy != null ? closestEnemy.transform.position : to;
         Vector3 direction = (targetPos - from).normalized;
         
-        // For Splitter, let it handle its own logic first
-        if (inner is Splitter)
-        {
-            // Let Splitter handle the casting with our mods applied
-            yield return inner.TryCast(from, to);
-        }
-        else if (inner is ChaoticModifier)
-        {
-            // We need to prioritize one behavior - choosing homing since it's the outer modifier
-            GameManager.Instance.projectileManager.CreateProjectile(
-                0, // Fixed projectile sprite index
-                "homing", // Force homing trajectory
-                from,
-                direction,
-                inner.Speed,
-                (hit, impactPos) => {
-                    if (hit.team != owner.team)
-                    {
-                        int amount = Mathf.RoundToInt(inner.Damage);
-                        var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
-                        hit.Damage(dmg);
-                        Debug.Log($"[HomingModifier+Chaotic] Hit {hit.owner.name} for {amount} damage");
-                    }
+        // Create the projectile with homing trajectory
+        GameManager.Instance.projectileManager.CreateProjectile(
+            0, // Fixed projectile sprite index
+            "homing", // Force homing trajectory
+            from,
+            direction,
+            inner.Speed,
+            (hit, impactPos) => {
+                if (hit.team != owner.team)
+                {
+                    int amount = Mathf.RoundToInt(inner.Damage);
+                    var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
+                    hit.Damage(dmg);
+                    Debug.Log($"[HomingModifier] Hit {hit.owner.name} for {amount} damage");
                 }
-            );
-            
-            yield return null;
-        }
-        else
-        {
-            // Create a standard homing projectile
-            GameManager.Instance.projectileManager.CreateProjectile(
-                0, // Fixed projectile sprite index 
-                "homing", // Force homing trajectory
-                from,
-                direction,
-                inner.Speed,
-                (hit, impactPos) => {
-                    if (hit.team != owner.team)
-                    {
-                        int amount = Mathf.RoundToInt(inner.Damage);
-                        var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
-                        hit.Damage(dmg);
-                        Debug.Log($"[HomingModifier] Hit {hit.owner.name} for {amount} damage");
-                    }
-                }
-            );
-            
-            yield return null;
-        }
+            }
+        );
+        
+        // Restore original mods
+        inner.mods = originalMods;
+        
+        yield return null;
+    }
+    
+    // Helper method to merge StatBlocks
+    private StatBlock MergeStatBlocks(StatBlock a, StatBlock b)
+    {
+        StatBlock result = new StatBlock();
+        
+        // Copy all modifiers from both blocks
+        result.damage.AddRange(a.damage);
+        result.damage.AddRange(b.damage);
+        
+        result.mana.AddRange(a.mana);
+        result.mana.AddRange(b.mana);
+        
+        result.speed.AddRange(a.speed);
+        result.speed.AddRange(b.speed);
+        
+        result.cd.AddRange(a.cd);
+        result.cd.AddRange(b.cd);
+        
+        return result;
     }
 }
