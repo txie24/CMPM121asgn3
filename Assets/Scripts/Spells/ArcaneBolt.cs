@@ -8,54 +8,63 @@ using Newtonsoft.Json.Linq;
 
 public sealed class ArcaneBolt : Spell
 {
-    // all fields are populated from JSON
     string displayName;
-    float baseDamage;
     Damage.Type damageType;
     float baseMana;
     float baseCooldown;
-    float baseSpeed;
     int iconIndex;
     string trajectory;
     int projectileSprite;
 
+    // RPN expressions for dynamic scaling
+    string damageExpr;
+    string speedExpr;
+
     public ArcaneBolt(SpellCaster owner) : base(owner) { }
 
     public override string DisplayName => displayName;
-    public override int    IconIndex    => iconIndex;
+    public override int IconIndex => iconIndex;
 
-    protected override float BaseDamage   => baseDamage;
-    protected override float BaseMana     => baseMana;
+    protected override float BaseDamage => RPNEvaluator.SafeEvaluateFloat(
+        damageExpr,
+        new Dictionary<string, float> {
+            { "power", owner.spellPower },
+            { "wave", GetCurrentWave() }
+        },
+        10f);
+
+    protected override float BaseSpeed => RPNEvaluator.SafeEvaluateFloat(
+        speedExpr,
+        new Dictionary<string, float> {
+            { "power", owner.spellPower },
+            { "wave", GetCurrentWave() }
+        },
+        8f);
+
+    protected override float BaseMana => baseMana;
     protected override float BaseCooldown => baseCooldown;
-    protected override float BaseSpeed    => baseSpeed;
 
-    /// <summary>
-    /// Expects the JObject for "arcane_bolt" (i.e. root["arcane_bolt"]).
-    /// </summary>
-    public override void LoadAttributes(JObject j, Dictionary<string,float> vars)
+    float GetCurrentWave()
     {
-        // identity
+        var spawner = UnityEngine.Object.FindFirstObjectByType<EnemySpawner>();
+        return spawner != null ? spawner.currentWave : 1;
+    }
+
+    public override void LoadAttributes(JObject j, Dictionary<string, float> vars)
+    {
         displayName = j["name"].Value<string>();
-        iconIndex   = j["icon"].Value<int>();
+        iconIndex = j["icon"].Value<int>();
 
-        // damage & type
-        baseDamage = RPNEvaluator.EvaluateFloat(
-            j["damage"]["amount"].Value<string>(), vars);
+        // Save damage expression for dynamic evaluation
+        damageExpr = j["damage"]["amount"].Value<string>();
         var dt = j["damage"]["type"].Value<string>();
-        // parse enum (case‑insensitive)
-        damageType = (Damage.Type)Enum.Parse(
-            typeof(Damage.Type), dt, true);
+        damageType = (Damage.Type)Enum.Parse(typeof(Damage.Type), dt, true);
 
-        // mana + cooldown
-        baseMana     = RPNEvaluator.EvaluateFloat(
-            j["mana_cost"].Value<string>(), vars);
-        baseCooldown = RPNEvaluator.EvaluateFloat(
-            j["cooldown"].Value<string>(), vars);
+        baseMana = RPNEvaluator.SafeEvaluateFloat(j["mana_cost"].Value<string>(), vars, 1f);
+        baseCooldown = RPNEvaluator.SafeEvaluateFloat(j["cooldown"].Value<string>(), vars, 0f);
 
-        // projectile
-        trajectory       = j["projectile"]["trajectory"].Value<string>();
-        baseSpeed        = RPNEvaluator.EvaluateFloat(
-            j["projectile"]["speed"].Value<string>(), vars);
+        trajectory = j["projectile"]["trajectory"].Value<string>();
+        speedExpr = j["projectile"]["speed"].Value<string>();
         projectileSprite = j["projectile"]["sprite"].Value<int>();
     }
 
@@ -64,8 +73,8 @@ public sealed class ArcaneBolt : Spell
         Debug.Log($"[{displayName}] Casting ▶ dmg={Damage:F1} ({damageType}), mana={Mana:F1}, spd={Speed:F1}");
 
         GameManager.Instance.projectileManager.CreateProjectile(
-            projectileSprite, // from JSON
-            trajectory,       // from JSON
+            projectileSprite,
+            trajectory,
             from,
             to - from,
             Speed,

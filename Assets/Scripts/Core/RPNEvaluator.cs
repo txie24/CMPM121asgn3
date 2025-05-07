@@ -4,19 +4,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Utility for evaluating Reverse‑Polish Notation expressions,
-/// both integer and floating‑point, with optional variables.
-/// </summary>
 public static class RPNEvaluator
 {
-    /// <summary>
-    /// Evaluates a space‑delimited RPN expression as an integer.
-    /// Supports variables and the operators +, -, *, /, %.
-    /// </summary>
-    /// <param name="expression">E.g. "base 5 wave * +"</param>
-    /// <param name="variables">Map from variable names to int values.</param>
-    /// <returns>The computed integer.</returns>
     public static int Evaluate(string expression, Dictionary<string,int> variables)
     {
         if (string.IsNullOrWhiteSpace(expression))
@@ -35,7 +24,6 @@ public static class RPNEvaluator
             }
             else
             {
-                // operator
                 int b = stack.Pop(), a = stack.Pop(), r;
                 switch (tok)
                 {
@@ -53,9 +41,6 @@ public static class RPNEvaluator
         return stack.Pop();
     }
 
-    /// <summary>
-    /// Same as Evaluate, but catches errors and returns a fallback.
-    /// </summary>
     public static int SafeEvaluate(string expression, Dictionary<string,int> variables, int fallback)
     {
         try
@@ -69,13 +54,6 @@ public static class RPNEvaluator
         }
     }
 
-    /// <summary>
-    /// Evaluates a space‑delimited RPN expression as a float.
-    /// Supports the operators +, -, *, /.
-    /// </summary>
-    /// <param name="expression">E.g. "power 1.5 *"</param>
-    /// <param name="variables">Map from variable names to float values.</param>
-    /// <returns>The computed float.</returns>
     public static float EvaluateFloat(string expression, Dictionary<string,float> variables)
     {
         if (string.IsNullOrWhiteSpace(expression))
@@ -94,7 +72,6 @@ public static class RPNEvaluator
             }
             else
             {
-                // operator
                 float b = stack.Pop(), a = stack.Pop(), r;
                 switch (tok)
                 {
@@ -109,5 +86,18 @@ public static class RPNEvaluator
         }
 
         return stack.Pop();
+    }
+
+    public static float SafeEvaluateFloat(string expression, Dictionary<string, float> variables, float fallback = 0f)
+    {
+        try
+        {
+            return EvaluateFloat(expression, variables);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"RPN SafeEvaluateFloat failed for '{expression}': {ex.Message}");
+            return fallback;
+        }
     }
 }
