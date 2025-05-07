@@ -120,7 +120,7 @@ public class SpellUI : MonoBehaviour
     
     public void DropSpell()
     {
-        PlayerController playerController = FindObjectOfType<PlayerController>();
+        PlayerController playerController = Object.FindFirstObjectByType<PlayerController>();
         if (playerController != null && playerController.spellcaster != null && slotIndex >= 0)
         {
             if (slotIndex < playerController.spellcaster.spells.Count)
