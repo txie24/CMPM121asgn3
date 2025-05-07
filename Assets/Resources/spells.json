@@ -85,6 +85,16 @@
        "damage_multiplier": "0.75",
        "mana_adder": "10",
        "projectile_trajectory": "homing"
-   }
-
+   },
+   "knockback": {
+    "name": "knockback",
+    "description": "Applies knockback to the enemy hit.",
+    "force": "10"
+    },
+"   bounce": {
+    "name": "bounce",
+    "description": "Bounces to another enemy nearby.",
+    "count": "2",
+    "range": "5"
+}
 }

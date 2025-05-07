@@ -6,38 +6,34 @@ using Newtonsoft.Json.Linq;
 public abstract class ModifierSpell : Spell
 {
     protected readonly Spell inner;
+    
     protected ModifierSpell(Spell inner) : base(inner.Owner)
     {
         this.inner = inner;
+        // Initialize modifiers on construction
+        mods = new StatBlock();
+        InjectMods(mods);
+        Debug.Log($"[ModifierSpell] Created {this.GetType().Name} wrapping {inner.DisplayName}");
     }
 
     public override string DisplayName => $"{inner.DisplayName} {Suffix}";
-    public override int    IconIndex   => inner.IconIndex;
+    public override int IconIndex => inner.IconIndex;
     protected abstract string Suffix { get; }
 
-    public override void LoadAttributes(JObject j, Dictionary<string,float> vars)
-    {
-        // 基类实现，可以由子类扩展
-        base.LoadAttributes(j, vars);
-    }
+    // Override to return the inner spell's calculated values
+    protected override float BaseDamage => inner.Damage;
+    protected override float BaseMana => inner.Mana;
+    protected override float BaseCooldown => inner.Cooldown;
+    protected override float BaseSpeed => inner.Speed;
 
-    protected override IEnumerator Cast(Vector3 from, Vector3 to)
+    public override void LoadAttributes(JObject j, Dictionary<string, float> vars)
     {
-        // 清空内部法术的修饰符，避免累积
-        inner.mods = new StatBlock();
+        // After loading attributes, reapply modifiers
+        mods = new StatBlock();
+        InjectMods(mods);
         
-        // 注入新的修饰符
-        InjectMods(inner.mods);
-        
-        Debug.Log($"[ModifierSpell] {DisplayName} 开始施放内部法术 {inner.DisplayName}");
-        
-        // 调用内部法术
-        yield return inner.TryCast(from, to);
-        
-        Debug.Log($"[ModifierSpell] {DisplayName} 完成施放内部法术 {inner.DisplayName}");
-        
-        // 施法完成后清空修饰符，确保不会影响后续施法
-        inner.mods = new StatBlock();
+        // Log calculated values for debugging
+        Debug.Log($"[ModifierSpell] {GetType().Name} final values - Damage: {Damage:F2}, Mana: {Mana:F2}, Cooldown: {Cooldown:F2}, Speed: {Speed:F2}");
     }
 
     protected abstract void InjectMods(StatBlock mods);
