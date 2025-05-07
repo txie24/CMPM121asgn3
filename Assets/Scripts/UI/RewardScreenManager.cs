@@ -251,7 +251,7 @@ public class RewardScreenManager : MonoBehaviour
     void UpdatePlayerSpellUI()
     {
         // Find the SpellUIContainer
-        SpellUIContainer container = FindObjectOfType<SpellUIContainer>();
+        SpellUIContainer container = Object.FindFirstObjectByType<SpellUIContainer>();
         if (container != null)
         {
             // Update the container's UI
