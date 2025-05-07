@@ -60,18 +60,20 @@ public class SpellBuilder
         // wave 1: always a plain ArcaneBolt
         if (wave <= 1)
         {
-            // Start with ArcaneBolt wrapped in DamageMagnifier
+            // Start with ArcaneBolt wrapped in HomingModifier
             var bolt = new ArcaneBolt(owner);
             if (catalog.TryGetValue("arcane_bolt", out var baseJson))
                 bolt.LoadAttributes(baseJson, vars);
 
-            var amplified = new DamageMagnifier(bolt);
-            if (catalog.TryGetValue("damage_amp", out var modJson))
-                amplified.LoadAttributes(modJson, vars);
+            var homing = new HomingModifier(bolt);
+            if (catalog.TryGetValue("homing", out var modJson))
+                homing.LoadAttributes(modJson, vars);
 
-            Debug.Log("Wave 1 starting with: DamageMagnifier + ArcaneBolt");
-            return amplified;
+            Debug.Log("Wave 1 starting with: HomingModifier + ArcaneBolt");
+            return homing;
         }
+
+
 
 
 

@@ -24,13 +24,13 @@ public sealed class HomingModifier : ModifierSpell
         if (j["damage_multiplier"] != null)
         {
             string expr = j["damage_multiplier"].Value<string>();
-            damageMultiplier = RPNEvaluator.EvaluateFloat(expr, vars);
+            damageMultiplier = RPNEvaluator.SafeEvaluateFloat(expr, vars, 0.75f);
         }
         
         if (j["mana_adder"] != null)
         {
             string expr = j["mana_adder"].Value<string>();
-            manaAdder = RPNEvaluator.EvaluateFloat(expr, vars);
+            manaAdder = RPNEvaluator.SafeEvaluateFloat(expr, vars, 10f);
         }
     }
 
@@ -53,16 +53,27 @@ public sealed class HomingModifier : ModifierSpell
         InjectMods(ourMods);
         inner.mods = MergeStatBlocks(originalMods, ourMods);
         
-        Debug.Log($"[HomingModifier] Casting homing spell with trajectory 'homing'");
+        Debug.Log($"[HomingModifier] Casting homing spell with trajectory 'homing', damage multiplier={damageMultiplier:F2}x, mana adder=+{manaAdder:F1}");
+        
+        // Compute the modified damage using the inner spell's Damage property after applying mods
+        float modifiedDamage = inner.Damage; // This should reflect the multiplied damage
         
         // Find the closest enemy for better targeting
         GameObject closestEnemy = GameManager.Instance.GetClosestEnemy(from);
         Vector3 targetPos = closestEnemy != null ? closestEnemy.transform.position : to;
         Vector3 direction = (targetPos - from).normalized;
         
+        // Use the inner spell's projectile sprite
+        int projectileSprite = 0; // Default sprite, should be loaded from inner spell
+        if (inner is ArcaneBolt arcaneBolt)
+        {
+            var jObject = JObject.Parse(JsonUtility.ToJson(inner));
+            projectileSprite = jObject["projectileSprite"]?.Value<int>() ?? 0;
+        }
+
         // Create the projectile with homing trajectory
         GameManager.Instance.projectileManager.CreateProjectile(
-            0, // Fixed projectile sprite index
+            projectileSprite, // Use the inner spell's sprite
             "homing", // Force homing trajectory
             from,
             direction,
@@ -70,7 +81,7 @@ public sealed class HomingModifier : ModifierSpell
             (hit, impactPos) => {
                 if (hit.team != owner.team)
                 {
-                    int amount = Mathf.RoundToInt(inner.Damage);
+                    int amount = Mathf.RoundToInt(modifiedDamage);
                     var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
                     hit.Damage(dmg);
                     Debug.Log($"[HomingModifier] Hit {hit.owner.name} for {amount} damage");
