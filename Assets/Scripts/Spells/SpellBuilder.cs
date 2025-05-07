@@ -60,18 +60,19 @@ public class SpellBuilder
         // wave 1: always a plain ArcaneBolt
         if (wave <= 1)
         {
-            // Start with ArcaneBolt wrapped in ChaoticModifier
+            // Start with ArcaneBolt wrapped in DamageMagnifier
             var bolt = new ArcaneBolt(owner);
             if (catalog.TryGetValue("arcane_bolt", out var baseJson))
                 bolt.LoadAttributes(baseJson, vars);
 
-            var chaos = new ChaoticModifier(bolt);
-            if (catalog.TryGetValue("chaos", out var modJson))
-                chaos.LoadAttributes(modJson, vars);
+            var amplified = new DamageMagnifier(bolt);
+            if (catalog.TryGetValue("damage_amp", out var modJson))
+                amplified.LoadAttributes(modJson, vars);
 
-            Debug.Log("Wave 1 starting with: ChaoticModifier + ArcaneBolt");
-            return chaos;
+            Debug.Log("Wave 1 starting with: DamageMagnifier + ArcaneBolt");
+            return amplified;
         }
+
 
 
 
