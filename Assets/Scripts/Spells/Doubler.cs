@@ -48,54 +48,37 @@ public sealed class Doubler : ModifierSpell
         mods.cd.Add(new ValueMod(ModOp.Mul, cooldownMultiplier));
     }
 
-    protected override IEnumerator Cast(Vector3 from, Vector3 to)
+    protected override IEnumerator ModifierCast(Vector3 from, Vector3 to)
     {
-        // Store original mods
-        StatBlock originalMods = inner.mods;
-        
-        // Create our mods
-        StatBlock ourMods = new StatBlock();
-        InjectMods(ourMods);
-        
-        // Apply our mods to inner spell
-        inner.mods = MergeStatBlocks(originalMods, ourMods);
-        
         Debug.Log($"[Doubler] First cast of {inner.DisplayName}");
         
-        // First cast - allow inner spell to handle it properly
-        // This is crucial for handling nested modifiers
-        yield return inner.TryCast(from, to);
+        // First cast - respect the inner spell's behavior
+        if (inner is ChaoticModifier || inner is HomingModifier || inner is Splitter)
+        {
+            // Let the inner modifier handle the first cast with its special behavior
+            yield return inner.TryCast(from, to);
+        }
+        else
+        {
+            // For regular spells
+            yield return inner.TryCast(from, to);
+        }
         
         // Small delay between casts
         yield return new WaitForSeconds(delay);
         
         Debug.Log($"[Doubler] Second cast of {inner.DisplayName} after {delay}s delay");
         
-        // Second cast - the inner spell's mods are still applied
-        // This is important for handling nested modifiers properly
-        yield return inner.TryCast(from, to);
-        
-        // Restore original mods
-        inner.mods = originalMods;
-    }
-    
-    // Helper method to merge StatBlocks
-    private StatBlock MergeStatBlocks(StatBlock a, StatBlock b)
-    {
-        StatBlock result = new StatBlock();
-        
-        result.damage.AddRange(a.damage);
-        result.damage.AddRange(b.damage);
-        
-        result.mana.AddRange(a.mana);
-        result.mana.AddRange(b.mana);
-        
-        result.speed.AddRange(a.speed);
-        result.speed.AddRange(b.speed);
-        
-        result.cd.AddRange(a.cd);
-        result.cd.AddRange(b.cd);
-        
-        return result;
+        // Second cast - repeat with the same handling
+        if (inner is ChaoticModifier || inner is HomingModifier || inner is Splitter)
+        {
+            // Let the inner modifier handle the second cast with its special behavior
+            yield return inner.TryCast(from, to);
+        }
+        else
+        {
+            // For regular spells
+            yield return inner.TryCast(from, to);
+        }
     }
 }

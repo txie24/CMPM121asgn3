@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;    // ← add this
+using System.Collections.Generic;    
 using Newtonsoft.Json.Linq;  
 
 public abstract class Spell
@@ -38,5 +38,5 @@ public abstract class Spell
 
     protected abstract IEnumerator Cast(Vector3 from, Vector3 to);
 
-    public virtual void LoadAttributes(Newtonsoft.Json.Linq.JObject j, Dictionary<string,float> vars) { }
+    public virtual void LoadAttributes(JObject j, Dictionary<string,float> vars) { }
 }

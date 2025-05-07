@@ -33,26 +33,16 @@ public sealed class ChaoticModifier : ModifierSpell
         mods.damage.Add(new ValueMod(ModOp.Mul, damageMultiplier));
     }
     
-    protected override IEnumerator Cast(Vector3 from, Vector3 to)
+    protected override IEnumerator ModifierCast(Vector3 from, Vector3 to)
     {
-        // Store the original mods
-        StatBlock originalMods = inner.mods;
+        Debug.Log($"[ChaoticModifier] ModifierCast() with spiraling projectile");
         
-        // Create a new StatBlock and apply our damage modifier
-        StatBlock ourMods = new StatBlock();
-        InjectMods(ourMods);
-        
-        // Merge the StatBlocks
-        inner.mods = MergeStatBlocks(originalMods, ourMods);
-        
-        Debug.Log($"[ChaoticModifier] Casting chaotic spell with trajectory 'spiraling'");
-        
-        // Get the direction from the from position to the to position
+        // Get the direction from start to target
         Vector3 direction = (to - from).normalized;
         
-        // Create the projectile directly using ProjectileManager with spiraling trajectory
+        // Create a spiraling projectile
         GameManager.Instance.projectileManager.CreateProjectile(
-            0, // Fixed projectile sprite index (you might want to preserve the original)
+            0, // Fixed projectile sprite index
             "spiraling", // Force spiraling trajectory
             from,
             direction,
@@ -69,30 +59,6 @@ public sealed class ChaoticModifier : ModifierSpell
             }
         );
         
-        // Restore the original mods
-        inner.mods = originalMods;
-        
         yield return null;
-    }
-    
-    // Helper method to merge StatBlocks
-    private StatBlock MergeStatBlocks(StatBlock a, StatBlock b)
-    {
-        StatBlock result = new StatBlock();
-        
-        // Copy all modifiers from both blocks
-        result.damage.AddRange(a.damage);
-        result.damage.AddRange(b.damage);
-        
-        result.mana.AddRange(a.mana);
-        result.mana.AddRange(b.mana);
-        
-        result.speed.AddRange(a.speed);
-        result.speed.AddRange(b.speed);
-        
-        result.cd.AddRange(a.cd);
-        result.cd.AddRange(b.cd);
-        
-        return result;
     }
 }

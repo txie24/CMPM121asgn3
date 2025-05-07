@@ -40,16 +40,8 @@ public sealed class Splitter : ModifierSpell
         mods.mana.Add(new ValueMod(ModOp.Mul, manaMultiplier));
     }
 
-    protected override IEnumerator Cast(Vector3 from, Vector3 to)
+    protected override IEnumerator ModifierCast(Vector3 from, Vector3 to)
     {
-        // Store original mods
-        StatBlock originalMods = inner.mods;
-        
-        // Create and apply our mods
-        StatBlock ourMods = new StatBlock();
-        InjectMods(ourMods);
-        inner.mods = MergeStatBlocks(originalMods, ourMods);
-        
         // Calculate two different directions
         Vector3 direction = (to - from).normalized;
         float baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -76,33 +68,91 @@ public sealed class Splitter : ModifierSpell
         
         Debug.Log($"[Splitter] Casting {inner.DisplayName} in two directions");
         
-        // Cast in first direction
-        yield return inner.TryCast(from, target1);
-        
-        // Cast in second direction (immediately after the first)
-        yield return inner.TryCast(from, target2);
-        
-        // Restore original mods
-        inner.mods = originalMods;
-    }
-    
-    // Helper method to merge StatBlocks
-    private StatBlock MergeStatBlocks(StatBlock a, StatBlock b)
-    {
-        StatBlock result = new StatBlock();
-        
-        result.damage.AddRange(a.damage);
-        result.damage.AddRange(b.damage);
-        
-        result.mana.AddRange(a.mana);
-        result.mana.AddRange(b.mana);
-        
-        result.speed.AddRange(a.speed);
-        result.speed.AddRange(b.speed);
-        
-        result.cd.AddRange(a.cd);
-        result.cd.AddRange(b.cd);
-        
-        return result;
+        // Handle special case for nested with ChaoticModifier
+        if (inner is ChaoticModifier)
+        {
+            // Create one spiraling projectile for each direction
+            GameManager.Instance.projectileManager.CreateProjectile(
+                0, // Fixed projectile sprite index
+                "spiraling", // Force spiraling trajectory
+                from,
+                dir1,
+                inner.Speed,
+                (hit, impactPos) => {
+                    if (hit.team != owner.team)
+                    {
+                        int amount = Mathf.RoundToInt(inner.Damage);
+                        var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
+                        hit.Damage(dmg);
+                        Debug.Log($"[Splitter+Chaotic] Hit {hit.owner.name} for {amount} damage (dir1)");
+                    }
+                }
+            );
+            
+            GameManager.Instance.projectileManager.CreateProjectile(
+                0, // Fixed projectile sprite index
+                "spiraling", // Force spiraling trajectory
+                from,
+                dir2,
+                inner.Speed,
+                (hit, impactPos) => {
+                    if (hit.team != owner.team)
+                    {
+                        int amount = Mathf.RoundToInt(inner.Damage);
+                        var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
+                        hit.Damage(dmg);
+                        Debug.Log($"[Splitter+Chaotic] Hit {hit.owner.name} for {amount} damage (dir2)");
+                    }
+                }
+            );
+            
+            yield return null;
+        }
+        // Handle special case for nested with HomingModifier
+        else if (inner is HomingModifier)
+        {
+            // Create one homing projectile for each direction (they'll find targets)
+            GameManager.Instance.projectileManager.CreateProjectile(
+                0, // Fixed projectile sprite index
+                "homing", // Force homing trajectory
+                from,
+                dir1,
+                inner.Speed,
+                (hit, impactPos) => {
+                    if (hit.team != owner.team)
+                    {
+                        int amount = Mathf.RoundToInt(inner.Damage);
+                        var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
+                        hit.Damage(dmg);
+                        Debug.Log($"[Splitter+Homing] Hit {hit.owner.name} for {amount} damage (dir1)");
+                    }
+                }
+            );
+            
+            GameManager.Instance.projectileManager.CreateProjectile(
+                0, // Fixed projectile sprite index
+                "homing", // Force homing trajectory
+                from,
+                dir2,
+                inner.Speed,
+                (hit, impactPos) => {
+                    if (hit.team != owner.team)
+                    {
+                        int amount = Mathf.RoundToInt(inner.Damage);
+                        var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
+                        hit.Damage(dmg);
+                        Debug.Log($"[Splitter+Homing] Hit {hit.owner.name} for {amount} damage (dir2)");
+                    }
+                }
+            );
+            
+            yield return null;
+        }
+        else
+        {
+            // Cast inner spell in both directions
+            yield return inner.TryCast(from, target1);
+            yield return inner.TryCast(from, target2);
+        }
     }
 }

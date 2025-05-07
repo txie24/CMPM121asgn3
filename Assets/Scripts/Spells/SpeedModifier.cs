@@ -29,7 +29,7 @@ public sealed class SpeedModifier : ModifierSpell
 
     protected override void InjectMods(StatBlock mods)
     {
-        // 使用从JSON加载的值
+        // 增加速度
         mods.speed.Add(new ValueMod(ModOp.Mul, speedMultiplier));
     }
 }
