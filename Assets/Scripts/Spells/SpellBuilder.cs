@@ -60,8 +60,8 @@ public class SpellBuilder
         // wave 1: always a plain ArcaneBolt
         if (wave <= 1)
         {
-            var bolt = new ArcaneBolt(owner);
-            if (catalog.TryGetValue("arcane_bolt", out var jd))
+            var bolt = new ArcaneSpray(owner);
+            if (catalog.TryGetValue("arcane_spray", out var jd))
                 bolt.LoadAttributes(jd, vars);
             return bolt;
         }
