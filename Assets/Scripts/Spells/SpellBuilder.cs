@@ -60,18 +60,19 @@ public class SpellBuilder
         // wave 1: always a plain ArcaneBolt
         if (wave <= 1)
         {
-            // Start with ArcaneBolt wrapped in Doubler
+            // Start with ArcaneBolt wrapped in Splitter
             var bolt = new ArcaneBolt(owner);
             if (catalog.TryGetValue("arcane_bolt", out var baseJson))
                 bolt.LoadAttributes(baseJson, vars);
 
-            var doubled = new Doubler(bolt);
-            if (catalog.TryGetValue("doubler", out var modJson))
-                doubled.LoadAttributes(modJson, vars);
+            var splitter = new Splitter(bolt);
+            if (catalog.TryGetValue("splitter", out var modJson))
+                splitter.LoadAttributes(modJson, vars);
 
-            Debug.Log("Wave 1 starting with: Doubler + ArcaneBolt");
-            return doubled;
+            Debug.Log("Wave 1 starting with: Splitter + ArcaneBolt");
+            return splitter;
         }
+
 
 
         // Ensure true randomness with a new seed based on current time
