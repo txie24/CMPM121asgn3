@@ -144,8 +144,6 @@ public class EnemySpawner : MonoBehaviour
             ? RPNEvaluator.SafeEvaluate(spawn.delay, vars, 2)
             : 2f;
 
-        Debug.Log($"[Spawn] {total}×'{spawn.enemy}' (HP={hp}, Spd={speed}, Dmg={damage}) @ wave {currentWave}");
-
         speed = Mathf.Clamp(speed, 1f, 20f);
         var seq = (spawn.sequence != null && spawn.sequence.Count > 0)
                   ? spawn.sequence

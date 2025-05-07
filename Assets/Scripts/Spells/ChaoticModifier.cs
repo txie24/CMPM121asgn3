@@ -23,13 +23,13 @@ public sealed class ChaoticModifier : ModifierSpell
         if (j["damage_multiplier"] != null)
         {
             string expr = j["damage_multiplier"].Value<string>();
-            damageMultiplier = RPNEvaluator.EvaluateFloat(expr, vars);
+            damageMultiplier = RPNEvaluator.SafeEvaluateFloat(expr, vars, 1.5f);
         }
     }
 
     protected override void InjectMods(StatBlock mods)
     {
-        // Increase damage
+        // Increase damage by multiplying with the evaluated multiplier
         mods.damage.Add(new ValueMod(ModOp.Mul, damageMultiplier));
     }
     
@@ -45,14 +45,17 @@ public sealed class ChaoticModifier : ModifierSpell
         // Merge the StatBlocks
         inner.mods = MergeStatBlocks(originalMods, ourMods);
         
-        Debug.Log($"[ChaoticModifier] Casting chaotic spell with trajectory 'spiraling'");
+        Debug.Log($"[ChaoticModifier] Casting chaotic spell with trajectory 'spiraling', damage multiplier={damageMultiplier:F2}x");
         
         // Get the direction from the from position to the to position
         Vector3 direction = (to - from).normalized;
         
+        // Compute the modified damage using the inner spell's Damage property after applying mods
+        float modifiedDamage = inner.Damage; // This should now reflect the multiplied damage
+        
         // Create the projectile directly using ProjectileManager with spiraling trajectory
         GameManager.Instance.projectileManager.CreateProjectile(
-            0, // Fixed projectile sprite index (you might want to preserve the original)
+            0, // Preserve original sprite (could be improved to use inner spell's sprite)
             "spiraling", // Force spiraling trajectory
             from,
             direction,
@@ -60,8 +63,8 @@ public sealed class ChaoticModifier : ModifierSpell
             (hit, impactPos) => {
                 if (hit.team != owner.team)
                 {
-                    // Apply damage using the inner spell's damage value which includes our modifier
-                    int amount = Mathf.RoundToInt(inner.Damage);
+                    // Apply the modified damage directly
+                    int amount = Mathf.RoundToInt(modifiedDamage);
                     var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
                     hit.Damage(dmg);
                     Debug.Log($"[ChaoticModifier] Hit {hit.owner.name} for {amount} damage");

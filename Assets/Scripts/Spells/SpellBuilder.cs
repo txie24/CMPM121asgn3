@@ -60,18 +60,19 @@ public class SpellBuilder
         // wave 1: always a plain ArcaneBolt
         if (wave <= 1)
         {
-            // Start with ArcaneBolt wrapped in Splitter
+            // Start with ArcaneBolt wrapped in ChaoticModifier
             var bolt = new ArcaneBolt(owner);
             if (catalog.TryGetValue("arcane_bolt", out var baseJson))
                 bolt.LoadAttributes(baseJson, vars);
 
-            var splitter = new Splitter(bolt);
-            if (catalog.TryGetValue("splitter", out var modJson))
-                splitter.LoadAttributes(modJson, vars);
+            var chaos = new ChaoticModifier(bolt);
+            if (catalog.TryGetValue("chaos", out var modJson))
+                chaos.LoadAttributes(modJson, vars);
 
-            Debug.Log("Wave 1 starting with: Splitter + ArcaneBolt");
-            return splitter;
+            Debug.Log("Wave 1 starting with: ChaoticModifier + ArcaneBolt");
+            return chaos;
         }
+
 
 
 

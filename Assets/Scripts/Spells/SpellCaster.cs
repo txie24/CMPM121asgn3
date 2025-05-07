@@ -48,13 +48,11 @@ public class SpellCaster : MonoBehaviour
         // Bug fix: First check if there's enough mana AND the spell is ready
         if (!s.IsReady)
         {
-            Debug.Log($"[SpellCaster] Spell {s.DisplayName} is on cooldown (cooldown: {s.Cooldown}, time since cast: {Time.time - s.lastCast})");
             yield break;
         }
         
         if (mana < s.Mana)
         {
-            Debug.Log($"[SpellCaster] Not enough mana to cast {s.DisplayName} (required: {s.Mana}, current: {mana})");
             yield break;
         }
         
