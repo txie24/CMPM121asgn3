@@ -587,7 +587,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &96316928
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1968,7 +1968,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 426128248}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 96316929}
+        m_TargetAssemblyTypeName: SpellUI, Assembly-CSharp
+        m_MethodName: DropSpell
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &426128248
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2070,7 +2082,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &457295003
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2880,7 +2892,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 578112682}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 797691355}
+        m_TargetAssemblyTypeName: SpellUI, Assembly-CSharp
+        m_MethodName: DropSpell
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &578112682
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3202,7 +3226,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &672798489
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3266,7 +3290,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 672798491}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2085212185}
+        m_TargetAssemblyTypeName: SpellUI, Assembly-CSharp
+        m_MethodName: DropSpell
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &672798491
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3957,7 +3993,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &797691354
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6848,7 +6884,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1528944912}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 457295004}
+        m_TargetAssemblyTypeName: SpellUI, Assembly-CSharp
+        m_MethodName: DropSpell
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1528944912
 MonoBehaviour:
   m_ObjectHideFlags: 0

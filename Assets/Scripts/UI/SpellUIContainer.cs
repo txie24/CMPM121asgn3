@@ -7,13 +7,18 @@ public class SpellUIContainer : MonoBehaviour
 
     void Start()
     {
-        // Initially, only show the first slot that has the initial spell
-        for(int i = 0; i < spellUIs.Length; ++i)
+        for (int i = 0; i < spellUIs.Length; ++i)
         {
             if (player != null && player.spellcaster != null && 
                 i < player.spellcaster.spells.Count && player.spellcaster.spells[i] != null)
             {
                 spellUIs[i].SetActive(true);
+                SpellUI spellUI = spellUIs[i].GetComponent<SpellUI>();
+                if (spellUI != null)
+                {
+                    spellUI.Initialize(i);
+                    spellUI.SetSpell(player.spellcaster.spells[i]);
+                }
             }
             else
             {
@@ -22,13 +27,11 @@ public class SpellUIContainer : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
         // No need for constant updates
     }
     
-    // Method to update all SpellUIs based on current spells
     public void UpdateSpellUIs()
     {
         if (player == null || player.spellcaster == null)
@@ -44,6 +47,7 @@ public class SpellUIContainer : MonoBehaviour
                 SpellUI spellUI = spellUIs[i].GetComponent<SpellUI>();
                 if (spellUI != null)
                 {
+                    spellUI.Initialize(i);
                     spellUI.SetSpell(spellcaster.spells[i]);
                 }
             }
@@ -51,6 +55,15 @@ public class SpellUIContainer : MonoBehaviour
             {
                 spellUIs[i].SetActive(false);
             }
+        }
+    }
+
+    public void HideSpellUISlot(int slotIndex)
+    {
+        if (slotIndex >= 0 && slotIndex < spellUIs.Length)
+        {
+            spellUIs[slotIndex].SetActive(false);
+            Debug.Log($"Hiding spell UI slot {slotIndex}");
         }
     }
 }

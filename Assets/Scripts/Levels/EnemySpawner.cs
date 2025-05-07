@@ -21,9 +21,9 @@ public class EnemySpawner : MonoBehaviour
 
     private void TriggerWin()
     {
-        GameManager.Instance.playerWon   = true;
+        GameManager.Instance.playerWon = true;
         GameManager.Instance.IsPlayerDead = false;
-        GameManager.Instance.state        = GameManager.GameState.GAMEOVER;
+        GameManager.Instance.state = GameManager.GameState.GAMEOVER;
         Debug.Log("✅ You Win: all waves completed.");
     }
 
@@ -45,9 +45,6 @@ public class EnemySpawner : MonoBehaviour
     {
         Debug.Log($"[EnemySpawner] StartLevel() called for '{levelname}'");
         level_selector.gameObject.SetActive(false);
-        GameManager.Instance.player
-            .GetComponent<PlayerController>()
-            .StartLevel();
 
         currentLevel = GameManager.Instance.levelDefs
             .Find(l => l.name == levelname);
@@ -58,12 +55,15 @@ public class EnemySpawner : MonoBehaviour
         }
 
         currentWave = 1;
+
+        // Initialize player stats for wave 1
+        var playerController = GameManager.Instance.player.GetComponent<PlayerController>();
+        playerController.StartLevel(); // Initialize components and UI
+        ScalePlayerForWave(currentWave); // Set initial stats using RPN
+
         StartCoroutine(SpawnWave());
     }
 
-    /// <summary>
-    /// Allows external callers (e.g. RewardScreenManager) to kick off the next wave.
-    /// </summary>
     public void NextWave()
     {
         if (!waveInProgress)
@@ -76,7 +76,7 @@ public class EnemySpawner : MonoBehaviour
         if (waveInProgress) yield break;
         waveInProgress = true;
 
-        // SCALE & DEBUG AT THE BEGINNING OF EVERY WAVE
+        // Scale player stats at the beginning of every wave
         ScalePlayerForWave(currentWave);
 
         // COUNTDOWN
@@ -88,7 +88,7 @@ public class EnemySpawner : MonoBehaviour
         }
 
         GameManager.Instance.countdown = 0;
-        GameManager.Instance.state     = GameManager.GameState.INWAVE;
+        GameManager.Instance.state = GameManager.GameState.INWAVE;
 
         // SPAWN ENEMIES
         int totalSpawned = 0;
@@ -107,10 +107,10 @@ public class EnemySpawner : MonoBehaviour
             yield break;
         }
 
-        GameManager.Instance.state        = GameManager.GameState.WAVEEND;
+        GameManager.Instance.state = GameManager.GameState.WAVEEND;
         GameManager.Instance.wavesCompleted++;
 
-        // PREPARE FOR NEXT WAVE (do not scale here)
+        // PREPARE FOR NEXT WAVE
         currentWave++;
         waveInProgress = false;
     }
@@ -121,7 +121,7 @@ public class EnemySpawner : MonoBehaviour
                            .Find(e => e.name == spawn.enemy);
         if (baseEnemy == null) yield break;
 
-        var vars = new Dictionary<string,int> {
+        var vars = new Dictionary<string, int> {
             { "base", baseEnemy.hp },
             { "wave", currentWave }
         };
@@ -160,12 +160,12 @@ public class EnemySpawner : MonoBehaviour
                 var pt = PickSpawnPoint(spawn.location);
                 var ofs = GetNonOverlappingOffset(pt.transform.position);
                 var pos = pt.transform.position + (Vector3)ofs;
-                var go  = Instantiate(enemy, pos, Quaternion.identity);
+                var go = Instantiate(enemy, pos, Quaternion.identity);
                 go.GetComponent<SpriteRenderer>()
                   .sprite = GameManager.Instance.enemySpriteManager.Get(baseEnemy.sprite);
 
                 var en = go.GetComponent<EnemyController>();
-                en.hp    = new Hittable(hp, Hittable.Team.MONSTERS, go);
+                en.hp = new Hittable(hp, Hittable.Team.MONSTERS, go);
                 en.speed = (int)speed;
                 GameManager.Instance.AddEnemy(go);
 
@@ -204,40 +204,41 @@ public class EnemySpawner : MonoBehaviour
             : SpawnPoints[Random.Range(0, SpawnPoints.Length)];
     }
 
-    /// <summary>
-    /// Scales (and refills) the player’s stats each wave via RPN.
-    /// </summary>
     private void ScalePlayerForWave(int wave)
     {
         Debug.Log($"[EnemySpawner] ScalePlayerForWave({wave})");
 
-        var v = new Dictionary<string,float> { { "wave", wave } };
-        float rHP   = RPNEvaluator.EvaluateFloat("95 wave 5 * +",   v);
+        var v = new Dictionary<string, float> { { "wave", wave } };
+        float rHP = RPNEvaluator.EvaluateFloat("95 wave 5 * +", v);
         float rMana = RPNEvaluator.EvaluateFloat("90 wave 10 * +", v);
-        float rRe   = RPNEvaluator.EvaluateFloat("10 wave +",      v);
-        float rPow  = RPNEvaluator.EvaluateFloat("wave 10 *",     v);
-        float rSpd  = RPNEvaluator.EvaluateFloat("5",             v);
+        float rRe = RPNEvaluator.EvaluateFloat("10 wave +", v);
+        float rPow = RPNEvaluator.EvaluateFloat("wave 10 *", v);
+        float rSpd = RPNEvaluator.EvaluateFloat("5", v);
 
-        var pc = GameManager.Instance.player
-                    .GetComponent<PlayerController>();
+        var pc = GameManager.Instance.player.GetComponent<PlayerController>();
         if (pc == null)
         {
             Debug.LogError("ScalePlayerForWave: no PlayerController!");
             return;
         }
 
-        // refill HP
-        pc.hp.SetMaxHP(Mathf.RoundToInt(rHP), false);
+        // Update HP
+        pc.hp.SetMaxHP(Mathf.RoundToInt(rHP), true); // true to refill HP
 
-        // mana & regen
+        // Update mana and regen
         pc.spellcaster.max_mana = Mathf.RoundToInt(rMana);
+        pc.spellcaster.mana = pc.spellcaster.max_mana; // Refill mana
         pc.spellcaster.mana_reg = Mathf.RoundToInt(rRe);
 
-        // spell power
+        // Update spell power
         pc.spellcaster.spellPower = Mathf.RoundToInt(rPow);
 
-        // movement speed
+        // Update movement speed
         pc.speed = Mathf.RoundToInt(rSpd);
+
+        // Update UI to reflect new stats
+        pc.healthui.SetHealth(pc.hp);
+        pc.manaui.SetSpellCaster(pc.spellcaster);
 
         Debug.Log($" → PlayerStats: HP={rHP:F1}, Mana={rMana:F1}, Regen={rRe:F1}, " +
                   $"Power={rPow:F1}, Speed={rSpd:F1}");

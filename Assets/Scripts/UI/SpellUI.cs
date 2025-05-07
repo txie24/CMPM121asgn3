@@ -11,12 +11,12 @@ public class SpellUI : MonoBehaviour
     public TextMeshProUGUI damage;
     public Spell           spell;
 
+    private int slotIndex = -1;
     float lastText;
     const float UPDATE_DELAY = 1f;
 
     void Awake()
     {
-        // Auto-find the cooldown bar if left unassigned:
         if (cooldown == null)
         {
             var allRects = GetComponentsInChildren<RectTransform>();
@@ -28,7 +28,6 @@ public class SpellUI : MonoBehaviour
                 Debug.Log($"[{name}] SpellUI bound cooldown to '{cooldown.name}'");
         }
 
-        // You can do the same for manacost and damage if you like:
         if (manacost == null)
         {
             manacost = GetComponentsInChildren<TextMeshProUGUI>()
@@ -55,11 +54,15 @@ public class SpellUI : MonoBehaviour
         }
     }
 
+    public void Initialize(int index)
+    {
+        slotIndex = index;
+    }
+
     void Update()
     {
         if (spell == null) return;
 
-        // update text once per second
         if (Time.time > lastText + UPDATE_DELAY)
         {
             if (manacost != null) manacost.text = Mathf.RoundToInt(spell.Mana).ToString();
@@ -67,7 +70,6 @@ public class SpellUI : MonoBehaviour
             lastText = Time.time;
         }
 
-        // update cooldown bar
         if (cooldown != null)
         {
             float elapsed = Time.time - spell.lastCast;
@@ -75,7 +77,6 @@ public class SpellUI : MonoBehaviour
             cooldown.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 48f * pct);
         }
 
-        // update icon image
         if (icon != null)
         {
             var img = icon.GetComponent<Image>();
@@ -93,19 +94,12 @@ public class SpellUI : MonoBehaviour
         }
     }
     
-    public void DropSpell() {
-        // Find the index of this spell in the spellcaster
+    public void DropSpell()
+    {
         PlayerController playerController = FindObjectOfType<PlayerController>();
-        if (playerController != null && playerController.spellcaster != null)
+        if (playerController != null && playerController.spellcaster != null && slotIndex >= 0)
         {
-            // Find which slot this UI represents
-            int slotIndex = -1;
-            if (this == playerController.spellui) slotIndex = 0;
-            else if (this == playerController.spellui2) slotIndex = 1;
-            else if (this == playerController.spellui3) slotIndex = 2;
-            else if (this == playerController.spellui4) slotIndex = 3;
-            
-            if (slotIndex >= 0 && slotIndex < playerController.spellcaster.spells.Count)
+            if (slotIndex < playerController.spellcaster.spells.Count)
             {
                 Debug.Log($"Dropping spell from slot {slotIndex}: {playerController.spellcaster.spells[slotIndex]?.DisplayName}");
                 playerController.spellcaster.spells[slotIndex] = null;
@@ -113,6 +107,9 @@ public class SpellUI : MonoBehaviour
                 // Clear this UI
                 spell = null;
                 
+                // Immediately deactivate this UI element to match the first slot's behavior
+                gameObject.SetActive(false);
+
                 // Update all of the UI slots
                 playerController.UpdateSpellUI();
             }
