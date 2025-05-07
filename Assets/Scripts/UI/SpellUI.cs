@@ -17,6 +17,7 @@ public class SpellUI : MonoBehaviour
 
     void Awake()
     {
+        // Auto-find the cooldown bar if left unassigned:
         if (cooldown == null)
         {
             var allRects = GetComponentsInChildren<RectTransform>();
@@ -28,29 +29,33 @@ public class SpellUI : MonoBehaviour
                 Debug.Log($"[{name}] SpellUI bound cooldown to '{cooldown.name}'");
         }
 
+        // Auto-find manacost and damage with improved logging:
         if (manacost == null)
         {
-            manacost = GetComponentsInChildren<TextMeshProUGUI>()
+            manacost = GetComponentsInChildren<TextMeshProUGUI>(true) // Include inactive objects
                 .FirstOrDefault(t => t.name.ToLower().Contains("mana"));
             if (manacost == null)
-                Debug.LogError($"[{name}] SpellUI: no child with 'mana' in its name!");
+                Debug.LogError($"[{name}] SpellUI: no child with 'mana' in its name! Please check the naming of the mana cost UI element.");
+            else
+                Debug.Log($"[{name}] SpellUI bound manacost to '{manacost.name}'");
         }
         if (damage == null)
         {
-            damage = GetComponentsInChildren<TextMeshProUGUI>()
-                .FirstOrDefault(t => t.name.ToLower().Contains("dmg") 
-                                   || t.name.ToLower().Contains("damage"));
+            damage = GetComponentsInChildren<TextMeshProUGUI>(true) // Include inactive objects
+                .FirstOrDefault(t => t.name.ToLower().Contains("dmg") || t.name.ToLower().Contains("damage"));
             if (damage == null)
-                Debug.LogError($"[{name}] SpellUI: no child with 'damage' in its name!");
+                Debug.LogError($"[{name}] SpellUI: no child with 'dmg' or 'damage' in its name! Please check the naming of the damage UI element.");
+            else
+                Debug.Log($"[{name}] SpellUI bound damage to '{damage.name}'");
         }
         if (icon == null)
         {
             var imgGO = transform
-                .GetComponentsInChildren<Image>()
+                .GetComponentsInChildren<Image>(true) // Include inactive objects
                 .Select(i => i.gameObject)
                 .FirstOrDefault(go => go.name.ToLower().Contains("icon"));
             if (imgGO != null) icon = imgGO;
-            else Debug.LogWarning($"[{name}] SpellUI: could not auto‑find Icon");
+            else Debug.LogWarning($"[{name}] SpellUI: could not auto-find Icon");
         }
     }
 
@@ -63,13 +68,31 @@ public class SpellUI : MonoBehaviour
     {
         if (spell == null) return;
 
+        // Update text once per second
         if (Time.time > lastText + UPDATE_DELAY)
         {
-            if (manacost != null) manacost.text = Mathf.RoundToInt(spell.Mana).ToString();
-            if (damage   != null) damage.text   = Mathf.RoundToInt(spell.Damage).ToString();
+            if (manacost != null)
+            {
+                manacost.text = Mathf.RoundToInt(spell.Mana).ToString();
+            }
+            else
+            {
+                Debug.LogWarning($"[{name}] SpellUI: manacost is null, cannot update mana cost for slot {slotIndex}");
+            }
+
+            if (damage != null)
+            {
+                damage.text = Mathf.RoundToInt(spell.Damage).ToString();
+            }
+            else
+            {
+                Debug.LogWarning($"[{name}] SpellUI: damage is null, cannot update damage for slot {slotIndex}");
+            }
+
             lastText = Time.time;
         }
 
+        // Update cooldown bar
         if (cooldown != null)
         {
             float elapsed = Time.time - spell.lastCast;
@@ -77,6 +100,7 @@ public class SpellUI : MonoBehaviour
             cooldown.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 48f * pct);
         }
 
+        // Update icon image
         if (icon != null)
         {
             var img = icon.GetComponent<Image>();
@@ -107,7 +131,7 @@ public class SpellUI : MonoBehaviour
                 // Clear this UI
                 spell = null;
                 
-                // Immediately deactivate this UI element to match the first slot's behavior
+                // Immediately deactivate this UI element
                 gameObject.SetActive(false);
 
                 // Update all of the UI slots
