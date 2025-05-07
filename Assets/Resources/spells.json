@@ -11,7 +11,7 @@
    "magic_missile":  {
        "name": "Magic Missile",
        "description": "A homing bolt.",
-       "icon": 2,
+       "icon": 4,
        "damage": {"amount": "10 power 3 / +", "type": "arcane"},
        "mana_cost": "1",
        "cooldown": "0",
@@ -42,8 +42,8 @@
    },
     "railgun": {
     "name": "Railgun",
-    "description": "A high-damage, fast, straight-line piercing shot.",
-    "icon": 3,
+    "description": "A high-damage, fast, straight-line piercing shot, that shoots through walls and enemies.",
+    "icon": 8,
     "damage": { "amount": "50 power 2 * +" , "type": "arcane" },
     "mana_cost": "10",
     "cooldown": "6",

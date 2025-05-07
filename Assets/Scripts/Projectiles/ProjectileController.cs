@@ -1,3 +1,5 @@
+// File: Assets/Scripts/Spells/ProjectileController.cs
+
 using UnityEngine;
 using System;
 using System.Collections;
@@ -7,10 +9,10 @@ public class ProjectileController : MonoBehaviour
     public float lifetime;
     public event Action<Hittable, Vector3> OnHit;
     public ProjectileMovement movement;
+    public bool piercing = false; // <-- Add piercing flag
 
     void Start()
     {
-        // Automatically assign movement if not assigned manually
         if (movement == null)
         {
             movement = GetComponent<ProjectileMovement>();
@@ -20,7 +22,6 @@ public class ProjectileController : MonoBehaviour
             }
         }
 
-        // Start the expiration timer
         if (lifetime > 0)
         {
             StartCoroutine(Expire(lifetime));
@@ -60,7 +61,8 @@ public class ProjectileController : MonoBehaviour
             }
         }
 
-        Destroy(gameObject);
+        if (!piercing) // <-- Only destroy if not piercing
+            Destroy(gameObject);
     }
 
     public void SetLifetime(float lifetime)

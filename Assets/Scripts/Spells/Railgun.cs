@@ -36,7 +36,8 @@ public sealed class Railgun : Spell
     protected override float BaseMana => baseMana;
     protected override float BaseCooldown => baseCooldown;
 
-    private Dictionary<string, float> GetVars() => new() {
+    private Dictionary<string, float> GetVars() => new()
+    {
         { "power", owner.spellPower },
         { "wave", GetCurrentWave() }
     };
@@ -68,7 +69,7 @@ public sealed class Railgun : Spell
 
         Vector3 direction = (to - from).normalized;
 
-        GameManager.Instance.projectileManager.CreateProjectile(
+        GameManager.Instance.projectileManager.CreatePiercingProjectile(
             projectileSprite,
             trajectory,
             from,
@@ -81,7 +82,7 @@ public sealed class Railgun : Spell
                     int amount = Mathf.RoundToInt(Damage);
                     var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
                     hit.Damage(dmg);
-                    Debug.Log($"[{displayName}] Hit {hit.owner.name} for {amount} dmg");
+                    Debug.Log($"[{displayName}] Pierced {hit.owner.name} for {amount} dmg");
                 }
             });
 
