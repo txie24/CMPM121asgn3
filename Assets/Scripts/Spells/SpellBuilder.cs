@@ -1,5 +1,3 @@
-// File: Assets/Scripts/Spells/SpellBuilder.cs
-
 using UnityEngine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -15,14 +13,13 @@ public class SpellBuilder
     private readonly Dictionary<string, JObject> catalog;
     private readonly System.Random rng = new System.Random();
 
+    // JSON keys for base spells and modifiers
     static readonly string[] BaseKeys = {
         "arcane_bolt",
         "arcane_spray",
         "magic_missile",
-        "arcane_blast",
-        "railgun"
+        "arcane_blast"
     };
-
     static readonly string[] ModifierKeys = {
         "splitter",
         "doubler",
@@ -42,49 +39,63 @@ public class SpellBuilder
         }
         else
         {
-            catalog = JsonConvert.DeserializeObject<Dictionary<string, JObject>>(ta.text);
+            catalog = JsonConvert.
+                DeserializeObject<Dictionary<string, JObject>>(ta.text);
             Debug.Log($"SpellBuilder loaded {catalog.Count} spells.");
         }
     }
 
     public Spell Build(SpellCaster owner)
     {
+        // grab wave from the spawner
         var spawner = Object.FindFirstObjectByType<EnemySpawner>();
         int wave = spawner != null ? spawner.currentWave : 1;
 
+        // RPN vars
         var vars = new Dictionary<string,float> {
             { "power", owner.spellPower },
             { "wave",  wave }
         };
 
+        // wave 1: always a plain ArcaneBolt
         if (wave <= 1)
-        //Starting spell
         {
+            // Start with ArcaneBolt wrapped in Doubler
             var bolt = new ArcaneBolt(owner);
-            if (catalog.TryGetValue("arcane_bolt", out var jd))
-                bolt.LoadAttributes(jd, vars);
-            return bolt;
+            if (catalog.TryGetValue("arcane_bolt", out var baseJson))
+                bolt.LoadAttributes(baseJson, vars);
+
+            var doubled = new Doubler(bolt);
+            if (catalog.TryGetValue("doubler", out var modJson))
+                doubled.LoadAttributes(modJson, vars);
+
+            Debug.Log("Wave 1 starting with: Doubler + ArcaneBolt");
+            return doubled;
         }
 
-        System.Random localRng = new System.Random(System.DateTime.Now.Millisecond + System.Environment.TickCount);
 
+        // Ensure true randomness with a new seed based on current time
+        System.Random localRng = new System.Random(System.DateTime.Now.Millisecond + System.Environment.TickCount);
+        
+        // pick random base spell
         int b = localRng.Next(BaseKeys.Length);
         Debug.Log($"Selected base spell index: {b}, spell type: {BaseKeys[b]}");
-
+        
         Spell s = CreateRandomBaseSpell(owner, b);
         if (catalog.TryGetValue(BaseKeys[b], out var bd))
             s.LoadAttributes(bd, vars);
         else
             Debug.LogError($"Failed to find base spell: {BaseKeys[b]} in catalog");
 
-        int mods = localRng.Next(3);
+        // wrap with 0–2 random modifiers
+        int mods = localRng.Next(3); // 0, 1, or 2 modifiers
         Debug.Log($"Applying {mods} modifiers");
-
+        
         for (int i = 0; i < mods; i++)
         {
             int m = localRng.Next(ModifierKeys.Length);
             Debug.Log($"Selected modifier index: {m}, modifier type: {ModifierKeys[m]}");
-
+            
             s = ApplyRandomModifier(s, m);
             if (catalog.TryGetValue(ModifierKeys[m], out var md))
                 s.LoadAttributes(md, vars);
@@ -104,7 +115,6 @@ public class SpellBuilder
             case 1: return new ArcaneSpray(owner);
             case 2: return new MagicMissile(owner);
             case 3: return new ArcaneBlast(owner);
-            case 4: return new Railgun(owner);
             default: return new ArcaneBolt(owner);
         }
     }
