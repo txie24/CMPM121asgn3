@@ -222,8 +222,9 @@ public class EnemySpawner : MonoBehaviour
             return;
         }
 
-        // Update HP
-        pc.hp.SetMaxHP(Mathf.RoundToInt(rHP), true); // true to refill HP
+        // Update HP, preserving health percentage
+        int newMaxHP = Mathf.RoundToInt(rHP);
+        pc.hp.SetMaxHP(newMaxHP, true); // Preserve health percentage
 
         // Update mana and regen
         pc.spellcaster.max_mana = Mathf.RoundToInt(rMana);
@@ -240,7 +241,7 @@ public class EnemySpawner : MonoBehaviour
         pc.healthui.SetHealth(pc.hp);
         pc.manaui.SetSpellCaster(pc.spellcaster);
 
-        Debug.Log($" → PlayerStats: HP={rHP:F1}, Mana={rMana:F1}, Regen={rRe:F1}, " +
-                  $"Power={rPow:F1}, Speed={rSpd:F1}");
+        Debug.Log($" → PlayerStats: HP={pc.hp.hp}/{pc.hp.max_hp}, Mana={rMana:F1}, Regen={rRe:F1}, " +
+                $"Power={rPow:F1}, Speed={rSpd:F1}");
     }
 }
