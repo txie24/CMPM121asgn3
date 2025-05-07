@@ -40,6 +40,15 @@
        "cooldown": "0.5",
        "projectile": {"trajectory": "straight", "speed": "8", "sprite": 0, "lifetime": "0.1 power 100 / +"}
    },
+    "railgun": {
+    "name": "Railgun",
+    "description": "A high-damage, fast, straight-line piercing shot.",
+    "icon": 3,
+    "damage": { "amount": "50 power 2 * +" , "type": "arcane" },
+    "mana_cost": "10",
+    "cooldown": "6",
+    "projectile": { "trajectory": "straight", "speed": "40", "sprite": 1 }
+    },
    "damage_amp": {
        "name": "damage-amplified",
        "description": "Increased damage and increased mana cost.",
