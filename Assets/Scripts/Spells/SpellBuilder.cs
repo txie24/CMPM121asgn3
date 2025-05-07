@@ -58,19 +58,12 @@ public class SpellBuilder
         };
 
         // wave 1: always a plain ArcaneBolt
-    if (wave <= 1)
-    {
-            // Start with ArcaneBlast wrapped in HomingModifier
-            var blast = new ArcaneBlast(owner);
-            if (catalog.TryGetValue("arcane_blast", out var baseJson))
-                blast.LoadAttributes(baseJson, vars);
-
-            var homing = new HomingModifier(blast);
-            if (catalog.TryGetValue("homing", out var modJson))
-                homing.LoadAttributes(modJson, vars);
-
-            Debug.Log("Wave 1 starting with: HomingModifier + ArcaneBlast");
-            return homing;
+        if (wave <= 1)
+        {
+            var bolt = new ArcaneBolt(owner);
+            if (catalog.TryGetValue("arcane_bolt", out var jd))
+                bolt.LoadAttributes(jd, vars);
+            return bolt;
         }
 
         // Ensure true randomness with a new seed based on current time
