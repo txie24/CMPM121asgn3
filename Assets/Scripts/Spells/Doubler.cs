@@ -43,29 +43,59 @@ public sealed class Doubler : ModifierSpell
 
     protected override void InjectMods(StatBlock mods)
     {
-        // 增加魔法消耗和冷却时间
+        // Increase mana cost and cooldown
         mods.mana.Add(new ValueMod(ModOp.Mul, manaMultiplier));
         mods.cd.Add(new ValueMod(ModOp.Mul, cooldownMultiplier));
     }
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        // 清空内部法术的修饰符，避免累积
-        inner.mods = new StatBlock();
+        // Store original mods
+        StatBlock originalMods = inner.mods;
         
-        // 注入修饰符
-        InjectMods(inner.mods);
+        // Create our mods
+        StatBlock ourMods = new StatBlock();
+        InjectMods(ourMods);
         
-        // 先施放一次法术
+        // Apply our mods to inner spell
+        inner.mods = MergeStatBlocks(originalMods, ourMods);
+        
+        Debug.Log($"[Doubler] First cast of {inner.DisplayName}");
+        
+        // First cast - allow inner spell to handle it properly
+        // This is crucial for handling nested modifiers
         yield return inner.TryCast(from, to);
         
-        // 等待指定时间
+        // Small delay between casts
         yield return new WaitForSeconds(delay);
         
-        // 再施放一次法术
+        Debug.Log($"[Doubler] Second cast of {inner.DisplayName} after {delay}s delay");
+        
+        // Second cast - the inner spell's mods are still applied
+        // This is important for handling nested modifiers properly
         yield return inner.TryCast(from, to);
         
-        // 施法完成后清空修饰符
-        inner.mods = new StatBlock();
+        // Restore original mods
+        inner.mods = originalMods;
+    }
+    
+    // Helper method to merge StatBlocks
+    private StatBlock MergeStatBlocks(StatBlock a, StatBlock b)
+    {
+        StatBlock result = new StatBlock();
+        
+        result.damage.AddRange(a.damage);
+        result.damage.AddRange(b.damage);
+        
+        result.mana.AddRange(a.mana);
+        result.mana.AddRange(b.mana);
+        
+        result.speed.AddRange(a.speed);
+        result.speed.AddRange(b.speed);
+        
+        result.cd.AddRange(a.cd);
+        result.cd.AddRange(b.cd);
+        
+        return result;
     }
 }

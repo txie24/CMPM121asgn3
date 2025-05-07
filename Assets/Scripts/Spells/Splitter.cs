@@ -36,42 +36,73 @@ public sealed class Splitter : ModifierSpell
 
     protected override void InjectMods(StatBlock mods)
     {
-        // 增加魔法消耗
+        // Increase mana cost
         mods.mana.Add(new ValueMod(ModOp.Mul, manaMultiplier));
     }
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        // 清空内部法术的修饰符，避免累积
-        inner.mods = new StatBlock();
+        // Store original mods
+        StatBlock originalMods = inner.mods;
         
-        // 注入修饰符
-        InjectMods(inner.mods);
+        // Create and apply our mods
+        StatBlock ourMods = new StatBlock();
+        InjectMods(ourMods);
+        inner.mods = MergeStatBlocks(originalMods, ourMods);
         
-        // 计算两个略微不同的方向
+        // Calculate two different directions
         Vector3 direction = (to - from).normalized;
         float baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         
-        // 使用从JSON加载的角度偏移
+        // Add slight randomization to make it look more natural
+        float randomVariation1 = Random.Range(-2f, 2f);
+        float randomVariation2 = Random.Range(-2f, 2f);
+        
         Vector3 dir1 = new Vector3(
-            Mathf.Cos((baseAngle + angle) * Mathf.Deg2Rad),
-            Mathf.Sin((baseAngle + angle) * Mathf.Deg2Rad),
+            Mathf.Cos((baseAngle + angle + randomVariation1) * Mathf.Deg2Rad),
+            Mathf.Sin((baseAngle + angle + randomVariation1) * Mathf.Deg2Rad),
             0
-        );
+        ).normalized;
+        
         Vector3 dir2 = new Vector3(
-                Mathf.Cos((baseAngle - angle) * Mathf.Deg2Rad),
-                Mathf.Sin((baseAngle - angle) * Mathf.Deg2Rad),
-                0
-            );
-            
-        // 向两个方向施放法术
+            Mathf.Cos((baseAngle - angle + randomVariation2) * Mathf.Deg2Rad),
+            Mathf.Sin((baseAngle - angle + randomVariation2) * Mathf.Deg2Rad),
+            0
+        ).normalized;
+        
+        // Use these directions to calculate new target positions
         Vector3 target1 = from + dir1 * 10f;
         Vector3 target2 = from + dir2 * 10f;
         
+        Debug.Log($"[Splitter] Casting {inner.DisplayName} in two directions");
+        
+        // Cast in first direction
         yield return inner.TryCast(from, target1);
+        
+        // Cast in second direction (immediately after the first)
         yield return inner.TryCast(from, target2);
         
-        // 施法完成后清空修饰符
-        inner.mods = new StatBlock();
+        // Restore original mods
+        inner.mods = originalMods;
+    }
+    
+    // Helper method to merge StatBlocks
+    private StatBlock MergeStatBlocks(StatBlock a, StatBlock b)
+    {
+        StatBlock result = new StatBlock();
+        
+        result.damage.AddRange(a.damage);
+        result.damage.AddRange(b.damage);
+        
+        result.mana.AddRange(a.mana);
+        result.mana.AddRange(b.mana);
+        
+        result.speed.AddRange(a.speed);
+        result.speed.AddRange(b.speed);
+        
+        result.cd.AddRange(a.cd);
+        result.cd.AddRange(b.cd);
+        
+        return result;
     }
 }
