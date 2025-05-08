@@ -56,21 +56,29 @@ public sealed class Doubler : ModifierSpell
         mods.cd.Add(new ValueMod(ModOp.Mul, cooldownMultiplier));
     }
     
-    protected override IEnumerator Cast(Vector3 from, Vector3 to)
+    // Override CastWithModifiers to implement the double-casting behavior
+    protected override IEnumerator CastWithModifiers(Vector3 from, Vector3 to)
     {
-        Debug.Log($"[Doubler] Casting first instance with mana={Mana}");
+        Debug.Log($"[Doubler] Casting {inner.DisplayName} twice with delay={delay:F1}s");
         
-        // Cast first instance
-        yield return inner.TryCast(from, to);
+        // Cast first instance normally
+        yield return base.Cast(from, to);
         
-        // Wait for delay
-        Debug.Log($"[Doubler] Waiting {delay}s before casting second instance");
+        // Wait for specified delay between casts
+        Debug.Log($"[Doubler] Waiting {delay}s before second cast");
         yield return new WaitForSeconds(delay);
         
-        // Cast second instance with updated position
-        Debug.Log($"[Doubler] Casting second instance after delay");
+        // Get updated position for second cast (in case the player moved)
         Vector3 secondFrom = owner.transform.position;
-        Vector3 secondTo = secondFrom + (to - from).normalized * Vector3.Distance(from, to);
+        
+        // Keep same direction but adjust for new starting position
+        Vector3 direction = (to - from).normalized;
+        float distance = Vector3.Distance(to, from);
+        Vector3 secondTo = secondFrom + direction * distance;
+        
+        Debug.Log($"[Doubler] Casting second instance of {inner.DisplayName} from updated position");
+        
+        // Cast second instance from new position
         yield return inner.TryCast(secondFrom, secondTo);
     }
 }

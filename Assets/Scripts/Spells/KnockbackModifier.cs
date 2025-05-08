@@ -5,9 +5,9 @@ using Newtonsoft.Json.Linq;
 
 public sealed class KnockbackModifier : ModifierSpell
 {
-    private float knockbackStrength = 5f;
+    private float knockbackStrength = 10f;
     private string modifierName = "knockback";
-    private string modifierDescription = "Adds a knockback effect to the spell.";
+    private string modifierDescription = "Applies knockback to the enemy hit.";
     
     public KnockbackModifier(Spell inner) : base(inner) { }
 
@@ -15,96 +15,69 @@ public sealed class KnockbackModifier : ModifierSpell
 
     public override void LoadAttributes(JObject j, Dictionary<string,float> vars)
     {
-        base.LoadAttributes(j, vars);
+        Debug.Log("[KnockbackModifier] Loading attributes from JSON");
         
+        // Load name and description
         modifierName = j["name"]?.Value<string>() ?? "knockback";
-        modifierDescription = j["description"]?.Value<string>() ?? "Adds a knockback effect to the spell.";
+        modifierDescription = j["description"]?.Value<string>() ?? "Applies knockback to the enemy hit.";
         
-        if (j["knockback_strength"] != null)
+        // Load knockback strength using RPN
+        if (j["force"] != null)
         {
-            string expr = j["knockback_strength"].Value<string>();
-            knockbackStrength = RPNEvaluator.SafeEvaluateFloat(expr, vars, 5f);
+            string expr = j["force"].Value<string>();
+            knockbackStrength = RPNEvaluator.SafeEvaluateFloat(expr, vars, 10f);
+            Debug.Log($"[KnockbackModifier] Loaded knockbackStrength={knockbackStrength} from expression '{expr}'");
         }
+        
+        // Call base class to update modifiers
+        base.LoadAttributes(j, vars);
     }
 
     protected override void InjectMods(StatBlock mods)
     {
-        // No stat modifications needed for knockback, handled in Cast
+        // Knockback doesn't modify any stats, just adds behavior
+        Debug.Log("[KnockbackModifier] No stat modifications needed for knockback effect");
     }
     
-    protected override IEnumerator Cast(Vector3 from, Vector3 to)
+    // Override CastWithModifiers to implement the knockback behavior
+    protected override IEnumerator CastWithModifiers(Vector3 from, Vector3 to)
     {
-        // Store the original mods
-        StatBlock originalMods = inner.mods;
+        // Get reference to ProjectileManager
+        var pm = GameManager.Instance.projectileManager;
         
-        Debug.Log($"[KnockbackModifier] Casting knockback spell with strength={knockbackStrength:F1}");
+        // Store original onHit wrapper
+        var originalOnHitWrapper = pm.onHitWrapper;
         
-        // Get the direction from the from position to the to position
-        Vector3 direction = (to - from).normalized;
-        
-        // Use the inner spell's projectile sprite and trajectory
-        int projectileSprite = 0; // Default sprite, should be loaded from inner spell
-        string trajectory = "straight"; // Default trajectory, should be loaded from inner spell
-        if (inner is ArcaneBolt arcaneBolt)
+        try
         {
-            var jObject = JObject.Parse(JsonUtility.ToJson(inner));
-            projectileSprite = jObject["projectileSprite"]?.Value<int>() ?? 0;
-            trajectory = jObject["trajectory"]?.Value<string>() ?? "straight";
-        }
-
-        // Create the projectile with the base spell's properties
-        GameManager.Instance.projectileManager.CreateProjectile(
-            projectileSprite,
-            trajectory,
-            from,
-            direction,
-            inner.Speed,
-            (hit, impactPos) => {
-                if (hit.team != owner.team)
+            // Set our wrapper to add knockback effect to projectile impacts
+            pm.onHitWrapper = (hit, impactPos) => {
+                if (hit.team != owner.team && hit.owner != null)
                 {
-                    int amount = Mathf.RoundToInt(inner.Damage);
-                    var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
-                    hit.Damage(dmg);
-                    Debug.Log($"[KnockbackModifier] Hit {hit.owner.name} for {amount} damage");
-
-                    // Apply knockback using the hit.owner (GameObject)
-                    if (hit.owner != null)
+                    // Get the Rigidbody2D from the hit target
+                    Rigidbody2D enemyRb = hit.owner.GetComponent<Rigidbody2D>();
+                    if (enemyRb != null && enemyRb.bodyType == RigidbodyType2D.Dynamic)
                     {
-                        Rigidbody2D enemyRb = hit.owner.GetComponent<Rigidbody2D>();
-                        if (enemyRb != null && enemyRb.bodyType == RigidbodyType2D.Dynamic)
-                        {
-                            Vector2 knockbackDirection = (hit.owner.transform.position - impactPos).normalized;
-                            enemyRb.AddForce(knockbackDirection * knockbackStrength, ForceMode2D.Impulse);
-                            Debug.Log($"[KnockbackModifier] Applied knockback to {hit.owner.name} with strength {knockbackStrength:F1}");
-                        }
+                        // Calculate knockback direction away from impact point
+                        Vector2 knockbackDirection = (hit.owner.transform.position - impactPos).normalized;
+                        
+                        // Apply force to the enemy
+                        enemyRb.AddForce(knockbackDirection * knockbackStrength, ForceMode2D.Impulse);
+                        
+                        Debug.Log($"[KnockbackModifier] Applied knockback to {hit.owner.name} with strength {knockbackStrength:F1} in direction {knockbackDirection}");
                     }
                 }
-            }
-        );
-        
-        // Restore original mods
-        inner.mods = originalMods;
-        
-        yield return null;
-    }
-    
-    // Helper method to merge StatBlocks (optional, included for consistency)
-    private StatBlock MergeStatBlocks(StatBlock a, StatBlock b)
-    {
-        StatBlock result = new StatBlock();
-        
-        result.damage.AddRange(a.damage);
-        result.damage.AddRange(b.damage);
-        
-        result.mana.AddRange(a.mana);
-        result.mana.AddRange(b.mana);
-        
-        result.speed.AddRange(a.speed);
-        result.speed.AddRange(b.speed);
-        
-        result.cd.AddRange(a.cd);
-        result.cd.AddRange(b.cd);
-        
-        return result;
+            };
+            
+            Debug.Log($"[KnockbackModifier] Enhancing {inner.DisplayName} with knockback effect (strength={knockbackStrength:F1})");
+            
+            // Call inner spell's cast with our wrapper in effect
+            yield return base.Cast(from, to);
+        }
+        finally
+        {
+            // Always restore original wrapper to avoid side effects
+            pm.onHitWrapper = originalOnHitWrapper;
+        }
     }
 }

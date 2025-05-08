@@ -47,33 +47,29 @@ public sealed class HomingModifier : ModifierSpell
         mods.mana.Add(new ValueMod(ModOp.Add, manaAdder));
     }
     
-    protected override IEnumerator Cast(Vector3 from, Vector3 to)
+    // Override CastWithModifiers instead of Cast
+    protected override IEnumerator CastWithModifiers(Vector3 from, Vector3 to)
     {
-        Debug.Log($"[HomingModifier] Casting with damage={Damage}, mana={Mana}");
+        // Get reference to ProjectileManager
+        var pm = GameManager.Instance.projectileManager;
         
-        // Find closest enemy for better targeting
-        GameObject closestEnemy = GameManager.Instance.GetClosestEnemy(from);
-        Vector3 targetPos = closestEnemy != null ? closestEnemy.transform.position : to;
-        Vector3 direction = (targetPos - from).normalized;
+        // Store original values
+        string originalTrajectoryOverride = pm.trajectoryOverride;
         
-        // Create the homing projectile
-        GameManager.Instance.projectileManager.CreateProjectile(
-            inner.IconIndex,
-            "homing",
-            from,
-            direction,
-            Speed,
-            (hit, impactPos) => {
-                if (hit.team != owner.team)
-                {
-                    int amount = Mathf.RoundToInt(Damage);
-                    var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
-                    hit.Damage(dmg);
-                    Debug.Log($"[HomingModifier] Hit {hit.owner.name} for {amount} damage");
-                }
-            }
-        );
-        
-        yield return null;
+        try
+        {
+            // Set our trajectory override to homing
+            pm.trajectoryOverride = "homing";
+            
+            Debug.Log($"[HomingModifier] Enhancing {inner.DisplayName} with homing projectiles (damage={Damage:F1}, mana={Mana:F1})");
+            
+            // Call inner spell's cast with our overrides in effect
+            yield return base.Cast(from, to);
+        }
+        finally
+        {
+            // Always restore original values to avoid side effects
+            pm.trajectoryOverride = originalTrajectoryOverride;
+        }
     }
 }
