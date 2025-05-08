@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 public abstract class ModifierSpell : Spell
 {
     protected readonly Spell inner;
-    
+
     protected ModifierSpell(Spell inner) : base(inner.Owner)
     {
         this.inner = inner;
@@ -31,9 +31,23 @@ public abstract class ModifierSpell : Spell
         // After loading attributes, reapply modifiers
         mods = new StatBlock();
         InjectMods(mods);
-        
+
         // Log calculated values for debugging
         Debug.Log($"[ModifierSpell] {GetType().Name} final values - Damage: {Damage:F2}, Mana: {Mana:F2}, Cooldown: {Cooldown:F2}, Speed: {Speed:F2}");
+    }
+
+    // Default Cast implementation that calls the inner spell's Cast with modified properties
+    protected override IEnumerator Cast(Vector3 from, Vector3 to)
+    {
+        // By default, apply modifier's behavior first, then call inner spell
+        yield return ApplyModifierEffect(from, to);
+    }
+
+    // New method to apply modifier-specific effects
+    protected virtual IEnumerator ApplyModifierEffect(Vector3 from, Vector3 to)
+    {
+        // Default implementation just passes through to inner spell
+        yield return inner.TryCast(from, to);
     }
 
     protected abstract void InjectMods(StatBlock mods);
