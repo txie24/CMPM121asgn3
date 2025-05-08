@@ -4,12 +4,6 @@ using System;
 public class ProjectileManager : MonoBehaviour
 {
     public GameObject[] projectiles;
-    
-    // New override fields
-    public string trajectoryOverride = null;
-    public float speedMultiplier = 1.0f;
-    public bool piercingOverride = false;
-    public Action<Hittable, Vector3> onHitWrapper = null;
 
     void Start()
     {
@@ -26,36 +20,18 @@ public class ProjectileManager : MonoBehaviour
             which = 0;
         }
 
-        // Apply overrides if present
-        string effectiveTrajectory = trajectoryOverride ?? trajectory;
-        float effectiveSpeed = speed * speedMultiplier;
-        
-        // Apply onHit wrapper if present
-        Action<Hittable, Vector3> effectiveOnHit = onHit;
-        if (onHitWrapper != null)
-        {
-            effectiveOnHit = (hit, pos) => {
-                onHit(hit, pos);
-                onHitWrapper(hit, pos);
-            };
-        }
-
         GameObject new_projectile = Instantiate(projectiles[which], where + direction.normalized*1.1f, Quaternion.Euler(0,0,Mathf.Atan2(direction.y, direction.x)*Mathf.Rad2Deg));
 
-        ProjectileMovement movement = MakeMovement(effectiveTrajectory, effectiveSpeed);
+        ProjectileMovement movement = MakeMovement(trajectory, speed);
         if (movement == null)
         {
-            Debug.LogWarning($"ProjectileManager: Unknown trajectory type '{effectiveTrajectory}', defaulting to straight.");
-            movement = new StraightProjectileMovement(effectiveSpeed);
+            Debug.LogWarning($"ProjectileManager: Unknown trajectory type '{trajectory}', defaulting to straight.");
+            movement = new StraightProjectileMovement(speed);
         }
 
         ProjectileController controller = new_projectile.GetComponent<ProjectileController>();
         controller.movement = movement;
-        controller.OnHit += effectiveOnHit;
-        
-        // Apply piercing override if set
-        if (piercingOverride)
-            controller.piercing = true;
+        controller.OnHit += onHit;
     }
 
     public void CreateProjectile(int which, string trajectory, Vector3 where, Vector3 direction, float speed, Action<Hittable, Vector3> onHit, float lifetime)
@@ -66,37 +42,19 @@ public class ProjectileManager : MonoBehaviour
             which = 0;
         }
 
-        // Apply overrides if present
-        string effectiveTrajectory = trajectoryOverride ?? trajectory;
-        float effectiveSpeed = speed * speedMultiplier;
-        
-        // Apply onHit wrapper if present
-        Action<Hittable, Vector3> effectiveOnHit = onHit;
-        if (onHitWrapper != null)
-        {
-            effectiveOnHit = (hit, pos) => {
-                onHit(hit, pos);
-                onHitWrapper(hit, pos);
-            };
-        }
+        GameObject new_projectile = Instantiate(projectiles[which], where + direction.normalized * 1.1f, Quaternion.Euler(0, 0, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg));
 
-        GameObject new_projectile = Instantiate(projectiles[which], where + direction.normalized * 1.1f, Quaternion.Euler(0, 0, Mathf.Atan2(direction.y, direction.x) * Mathf.Deg2Rad));
-
-        ProjectileMovement movement = MakeMovement(effectiveTrajectory, effectiveSpeed);
+        ProjectileMovement movement = MakeMovement(trajectory, speed);
         if (movement == null)
         {
-            Debug.LogWarning($"ProjectileManager: Unknown trajectory type '{effectiveTrajectory}', defaulting to straight.");
-            movement = new StraightProjectileMovement(effectiveSpeed);
+            Debug.LogWarning($"ProjectileManager: Unknown trajectory type '{trajectory}', defaulting to straight.");
+            movement = new StraightProjectileMovement(speed);
         }
 
         ProjectileController controller = new_projectile.GetComponent<ProjectileController>();
         controller.movement = movement;
-        controller.OnHit += effectiveOnHit;
+        controller.OnHit += onHit;
         controller.SetLifetime(lifetime);
-        
-        // Apply piercing override if set
-        if (piercingOverride)
-            controller.piercing = true;
     }
 
     public void CreatePiercingProjectile(int which, string trajectory, Vector3 where, Vector3 direction, float speed, Action<Hittable, Vector3> onHit)
@@ -107,32 +65,18 @@ public class ProjectileManager : MonoBehaviour
             which = 0;
         }
 
-        // Apply overrides if present
-        string effectiveTrajectory = trajectoryOverride ?? trajectory;
-        float effectiveSpeed = speed * speedMultiplier;
-        
-        // Apply onHit wrapper if present
-        Action<Hittable, Vector3> effectiveOnHit = onHit;
-        if (onHitWrapper != null)
-        {
-            effectiveOnHit = (hit, pos) => {
-                onHit(hit, pos);
-                onHitWrapper(hit, pos);
-            };
-        }
+        GameObject new_projectile = Instantiate(projectiles[which], where + direction.normalized * 1.1f, Quaternion.Euler(0, 0, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg));
 
-        GameObject new_projectile = Instantiate(projectiles[which], where + direction.normalized * 1.1f, Quaternion.Euler(0, 0, Mathf.Atan2(direction.y, direction.x) * Mathf.Deg2Rad));
-
-        ProjectileMovement movement = MakeMovement(effectiveTrajectory, effectiveSpeed);
+        ProjectileMovement movement = MakeMovement(trajectory, speed);
         if (movement == null)
         {
-            Debug.LogWarning($"ProjectileManager: Unknown trajectory type '{effectiveTrajectory}', defaulting to straight.");
-            movement = new StraightProjectileMovement(effectiveSpeed);
+            Debug.LogWarning($"ProjectileManager: Unknown trajectory type '{trajectory}', defaulting to straight.");
+            movement = new StraightProjectileMovement(speed);
         }
 
         ProjectileController controller = new_projectile.GetComponent<ProjectileController>();
         controller.movement = movement;
-        controller.OnHit += effectiveOnHit;
+        controller.OnHit += onHit;
         controller.piercing = true; // <--- mark projectile as piercing
     }
 

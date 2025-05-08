@@ -37,29 +37,28 @@ public sealed class ChaoticModifier : ModifierSpell
         mods.damage.Add(new ValueMod(ModOp.Mul, damageMultiplier));
     }
     
-    // Override CastWithModifiers instead of Cast
-    protected override IEnumerator CastWithModifiers(Vector3 from, Vector3 to)
+    protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        // Get reference to ProjectileManager
-        var pm = GameManager.Instance.projectileManager;
+        Debug.Log($"[ChaoticModifier] Casting with damage={Damage}, using spiraling trajectory");
         
-        // Store original values
-        string originalTrajectoryOverride = pm.trajectoryOverride;
+        // Create spiraling projectile
+        GameManager.Instance.projectileManager.CreateProjectile(
+            inner.IconIndex,
+            "spiraling",  // Force spiraling trajectory
+            from,
+            (to - from).normalized,
+            Speed,
+            (hit, impactPos) => {
+                if (hit.team != owner.team)
+                {
+                    int amount = Mathf.RoundToInt(Damage);
+                    var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
+                    hit.Damage(dmg);
+                    Debug.Log($"[ChaoticModifier] Hit {hit.owner.name} for {amount} damage");
+                }
+            }
+        );
         
-        try
-        {
-            // Set our trajectory override to spiraling
-            pm.trajectoryOverride = "spiraling";
-            
-            Debug.Log($"[ChaoticModifier] Enhancing {inner.DisplayName} with chaotic spiraling trajectories (damage={Damage:F1})");
-            
-            // Call inner spell's cast with our overrides in effect
-            yield return base.Cast(from, to);
-        }
-        finally
-        {
-            // Always restore original values to avoid side effects
-            pm.trajectoryOverride = originalTrajectoryOverride;
-        }
+        yield return null;
     }
 }

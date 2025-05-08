@@ -37,30 +37,10 @@ public sealed class SpeedModifier : ModifierSpell
         mods.speed.Add(new ValueMod(ModOp.Mul, speedMultiplier));
     }
     
-    // Override CastWithModifiers instead of Cast
-    protected override IEnumerator CastWithModifiers(Vector3 from, Vector3 to)
+    protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        // Get reference to ProjectileManager
-        var pm = GameManager.Instance.projectileManager;
-        
-        // Store original speed multiplier value
-        float originalSpeedMultiplier = pm.speedMultiplier;
-        
-        try
-        {
-            // Apply our speed multiplier to the ProjectileManager
-            // Use multiplication to allow stacking with other speed modifiers
-            pm.speedMultiplier *= speedMultiplier;
-            
-            Debug.Log($"[SpeedModifier] Enhancing {inner.DisplayName} with increased projectile speed: {Speed:F1} (multiplier: {speedMultiplier:F2}x)");
-            
-            // Call inner spell's cast with our overrides in effect
-            yield return base.Cast(from, to);
-        }
-        finally
-        {
-            // Always restore original values to avoid side effects
-            pm.speedMultiplier = originalSpeedMultiplier;
-        }
+        Debug.Log($"[SpeedModifier] Casting with speed={Speed}");
+        // Simply pass through to inner spell with our modifiers applied
+        yield return inner.TryCast(from, to);
     }
 }

@@ -47,19 +47,10 @@ public sealed class DamageMagnifier : ModifierSpell
         mods.mana.Add(new ValueMod(ModOp.Mul, manaMultiplier));
     }
     
-    // Override CastWithModifiers to add custom behavior if needed
-    protected override IEnumerator CastWithModifiers(Vector3 from, Vector3 to)
+    protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        // For DamageMagnifier, we don't need to override projectile creation
-        // We only need to apply stat modifications which is done in InjectMods
-        // Those modifications affect the damage calculated for all projectiles
-        
-        Debug.Log($"[DamageMagnifier] Enhancing {inner.DisplayName} with increased damage: {Damage:F1} (multiplier: {damageMultiplier:F2}x)");
-        
-        // Get a reference to the ProjectileManager for potential future enhancements
-        var pm = GameManager.Instance.projectileManager;
-        
-        // Simply delegate to the inner spell with our stat modifiers applied
-        yield return base.Cast(from, to);
+        Debug.Log($"[DamageMagnifier] Casting spell with damage={Damage}, mana={Mana}");
+        // Simply pass through to inner spell with our modifiers applied
+        yield return inner.TryCast(from, to);
     }
 }
