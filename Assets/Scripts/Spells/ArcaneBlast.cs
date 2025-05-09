@@ -43,14 +43,15 @@ public sealed class ArcaneBlast : Spell
     protected override float BaseMana => baseMana;
     protected override float BaseCooldown => baseCooldown;
 
-    private Dictionary<string, float> GetVars() => new() {
+    private Dictionary<string, float> GetVars() => new()
+    {
         { "power", owner.spellPower },
-        { "wave", GetCurrentWave() }
+        { "wave",  GetCurrentWave()       }
     };
 
     private float GetCurrentWave()
     {
-        var spawner = UnityEngine.Object.FindFirstObjectByType<EnemySpawner>();
+        var spawner = Object.FindFirstObjectByType<EnemySpawner>();
         return spawner != null ? spawner.currentWave : 1;
     }
 
@@ -77,11 +78,9 @@ public sealed class ArcaneBlast : Spell
             secondarySpeed = j["secondary_projectile"]["speed"] != null
                 ? RPNEvaluator.SafeEvaluateFloat(j["secondary_projectile"]["speed"].Value<string>(), vars, 8f)
                 : BaseSpeed * 0.8f;
-
             secondaryLifetime = j["secondary_projectile"]["lifetime"] != null
                 ? float.Parse(j["secondary_projectile"]["lifetime"].Value<string>())
                 : 0.3f;
-
             secondaryProjectileSprite = j["secondary_projectile"]["sprite"]?.Value<int>() ?? projectileSprite;
         }
         else
@@ -95,8 +94,18 @@ public sealed class ArcaneBlast : Spell
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        Debug.Log($"[{displayName}] Casting ▶ dmg={Damage:F1}, spd={Speed:F1}, secondary={SecondaryDamage:F1}x{SecondaryCount}");
+        // 1) Capture the amplified values up‑front
+        float primaryDamage = Damage;
+        float secondaryDamage = secondaryDamageExpr != null
+            ? RPNEvaluator.SafeEvaluateFloat(secondaryDamageExpr, GetVars(), primaryDamage * 0.25f)
+            : primaryDamage * 0.25f;
+        int secondaryCount = secondaryCountExpr != null
+            ? Mathf.RoundToInt(RPNEvaluator.SafeEvaluateFloat(secondaryCountExpr, GetVars(), 8))
+            : 8;
 
+        Debug.Log($"[{displayName}] Casting ▶ dmg={primaryDamage:F1}, spd={Speed:F1}, secondary={secondaryDamage:F1}x{secondaryCount}");
+
+        // 2) Fire primary projectile
         GameManager.Instance.projectileManager.CreateProjectile(
             projectileSprite,
             trajectory,
@@ -107,48 +116,39 @@ public sealed class ArcaneBlast : Spell
             {
                 if (hit.team != owner.team)
                 {
-                    int amount = Mathf.RoundToInt(Damage);
-                    var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
+                    int amt = Mathf.RoundToInt(primaryDamage);
+                    var dmg = new global::Damage(amt, global::Damage.Type.ARCANE);
                     hit.Damage(dmg);
-                    Debug.Log($"[{displayName}] Primary hit on {hit.owner.name} for {amount} dmg");
-                    SpawnSecondaryProjectiles(impactPos);
+                    Debug.Log($"[{displayName}] Primary hit on {hit.owner.name} for {amt} dmg");
+
+                    // 3) Spawn secondaries exactly at the real impact point
+                    SpawnSecondaryProjectiles(impactPos, secondaryDamage, secondaryCount);
                 }
             });
 
         yield return null;
     }
 
-    private float SecondaryDamage => secondaryDamageExpr != null
-        ? RPNEvaluator.SafeEvaluateFloat(secondaryDamageExpr, GetVars(), Damage * 0.25f)
-        : Damage * 0.25f;
-
-    private int SecondaryCount => secondaryCountExpr != null
-        ? Mathf.RoundToInt(RPNEvaluator.SafeEvaluateFloat(secondaryCountExpr, GetVars(), 8))
-        : 8;
-
-    private void SpawnSecondaryProjectiles(Vector3 position)
+    private void SpawnSecondaryProjectiles(Vector3 origin, float secondaryDamage, int count)
     {
-        float angleStep = 360f / SecondaryCount;
+        float angleStep = 360f / count;
 
-        for (int i = 0; i < SecondaryCount; i++)
+        for (int i = 0; i < count; i++)
         {
-            float angle = i * angleStep;
-            Vector3 direction = new Vector3(
-                Mathf.Cos(angle * Mathf.Deg2Rad),
-                Mathf.Sin(angle * Mathf.Deg2Rad),
-                0).normalized;
+            float angle = i * angleStep * Mathf.Deg2Rad;
+            Vector3 dir = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0).normalized;
 
             GameManager.Instance.projectileManager.CreateProjectile(
                 secondaryProjectileSprite,
                 secondaryTrajectory,
-                position,
-                direction,
+                origin,
+                dir,
                 secondarySpeed * Speed / BaseSpeed,
                 (hit, impactPos) =>
                 {
                     if (hit.team != owner.team)
                     {
-                        int amt = Mathf.RoundToInt(SecondaryDamage);
+                        int amt = Mathf.RoundToInt(secondaryDamage);
                         var dmg = new global::Damage(amt, global::Damage.Type.ARCANE);
                         hit.Damage(dmg);
                         Debug.Log($"[{displayName}] Secondary hit on {hit.owner.name} for {amt} dmg");

@@ -63,16 +63,16 @@ public class SpellBuilder
         if (wave <= 1)
         {
             // Force ArcaneSpray + HomingModifier for wave 1
-            Spell blast = new ArcaneBlast(owner);
-            if (catalog.TryGetValue("arcane_blast", out var baseJson))
-                blast.LoadAttributes(baseJson, vars);
+            Spell railgun = new Railgun(owner);
+            if (catalog.TryGetValue("railgun", out var baseJson))
+                railgun.LoadAttributes(baseJson, vars);
 
-            blast = new DamageMagnifier(blast);
+            railgun = new DamageMagnifier(railgun);
             if (catalog.TryGetValue("damage_amp", out var modJson))
-                blast.LoadAttributes(modJson, vars);
+                railgun.LoadAttributes(modJson, vars);
 
             Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + KnockbackModifier");
-            return blast;
+            return railgun;
         }
 
 
