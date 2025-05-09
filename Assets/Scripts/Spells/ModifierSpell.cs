@@ -5,7 +5,11 @@ using Newtonsoft.Json.Linq;
 
 public abstract class ModifierSpell : Spell
 {
+    // The spell we’re wrapping
     protected readonly Spell inner;
+
+    // Expose it publicly so subclasses can walk the chain
+    public Spell InnerSpell => inner;
 
     protected ModifierSpell(Spell inner) : base(inner.Owner)
     {
@@ -20,7 +24,7 @@ public abstract class ModifierSpell : Spell
     public override int IconIndex => inner.IconIndex;
     protected abstract string Suffix { get; }
 
-    // Override to return the inner spell's calculated values
+    // Delegate all base stats to our inner, then let our StatBlock mods apply
     protected override float BaseDamage => inner.Damage;
     protected override float BaseMana => inner.Mana;
     protected override float BaseCooldown => inner.Cooldown;
@@ -28,27 +32,28 @@ public abstract class ModifierSpell : Spell
 
     public override void LoadAttributes(JObject j, Dictionary<string, float> vars)
     {
-        // After loading attributes, reapply modifiers
+        // If you need the JSON for this modifier itself, parse it here
+        // Then reapply your InjectMods to rebuild mods from scratch
         mods = new StatBlock();
         InjectMods(mods);
 
-        // Log calculated values for debugging
-        Debug.Log($"[ModifierSpell] {GetType().Name} final values - Damage: {Damage:F2}, Mana: {Mana:F2}, Cooldown: {Cooldown:F2}, Speed: {Speed:F2}");
+        Debug.Log($"[ModifierSpell] {GetType().Name} final values - " +
+                  $"Damage: {Damage:F2}, Mana: {Mana:F2}, " +
+                  $"Cooldown: {Cooldown:F2}, Speed: {Speed:F2}");
     }
 
-    // Default Cast implementation that calls the inner spell's Cast with modified properties
+    // By default, modifiers just pass through
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        // By default, apply modifier's behavior first, then call inner spell
         yield return ApplyModifierEffect(from, to);
     }
 
-    // New method to apply modifier-specific effects
+    // Override this in modifiers that need special behavior
     protected virtual IEnumerator ApplyModifierEffect(Vector3 from, Vector3 to)
     {
-        // Default implementation just passes through to inner spell
         yield return inner.TryCast(from, to);
     }
 
+    // Each modifier injects its own ValueMods here
     protected abstract void InjectMods(StatBlock mods);
 }
