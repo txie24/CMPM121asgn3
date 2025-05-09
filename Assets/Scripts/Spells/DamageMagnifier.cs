@@ -1,4 +1,3 @@
-// File: DamageMagnifier.cs
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,8 +5,8 @@ using Newtonsoft.Json.Linq;
 
 public sealed class DamageMagnifier : ModifierSpell
 {
-    private float damageMultiplier = 2f;
-    private float manaMultiplier = 2f;
+    private float damageMultiplier = 1.5f;
+    private float manaMultiplier = 1.5f;
     private string modifierName = "damage-amplified";
 
     public DamageMagnifier(Spell inner) : base(inner) { }
@@ -16,19 +15,52 @@ public sealed class DamageMagnifier : ModifierSpell
 
     public override void LoadAttributes(JObject j, Dictionary<string, float> vars)
     {
-        modifierName = j["name"]?.Value<string>() ?? modifierName;
+        Debug.Log("[DamageMagnifier] Loading attributes from JSON");
+
+        // Load name
+        modifierName = j["name"]?.Value<string>() ?? "damage-amplified";
+
+        // Load damage multiplier using RPN
         if (j["damage_multiplier"] != null)
-            damageMultiplier = RPNEvaluator.SafeEvaluateFloat(
-                j["damage_multiplier"].Value<string>(), vars, damageMultiplier);
+        {
+            string expr = j["damage_multiplier"].Value<string>();
+            damageMultiplier = RPNEvaluator.SafeEvaluateFloat(expr, vars, 1.5f);
+            Debug.Log($"[DamageMagnifier] Loaded damage_multiplier={damageMultiplier} from expression '{expr}'");
+        }
+
+        // Load mana multiplier using RPN
         if (j["mana_multiplier"] != null)
-            manaMultiplier = RPNEvaluator.SafeEvaluateFloat(
-                j["mana_multiplier"].Value<string>(), vars, manaMultiplier);
+        {
+            string expr = j["mana_multiplier"].Value<string>();
+            manaMultiplier = RPNEvaluator.SafeEvaluateFloat(expr, vars, 1.5f);
+            Debug.Log($"[DamageMagnifier] Loaded mana_multiplier={manaMultiplier} from expression '{expr}'");
+        }
+
+        // Register our mods
         base.LoadAttributes(j, vars);
     }
 
     protected override void InjectMods(StatBlock mods)
     {
+        Debug.Log($"[DamageMagnifier] Injecting mods: damage×{damageMultiplier}, mana×{manaMultiplier}");
         mods.damage.Add(new ValueMod(ModOp.Mul, damageMultiplier));
         mods.mana.Add(new ValueMod(ModOp.Mul, manaMultiplier));
+    }
+
+    protected override IEnumerator Cast(Vector3 from, Vector3 to)
+    {
+        Debug.Log($"[DamageMagnifier] Casting spell with damage={Damage}, mana={Mana}");
+
+        // 1) Save original inner mods
+        var originalInnerMods = inner.mods;
+
+        // 2) Swap in our wrapper’s mods so inner.Damage/Mana include your multipliers
+        inner.mods = this.mods;
+
+        // 3) Cast the inner spell (now with amplified stats)
+        yield return inner.TryCast(from, to);
+
+        // 4) Restore the inner spell’s original mods
+        inner.mods = originalInnerMods;
     }
 }

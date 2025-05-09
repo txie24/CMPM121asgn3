@@ -62,20 +62,21 @@ public class SpellBuilder
         // wave 1: always a plain ArcaneBolt (or customized test spell)
         if (wave <= 1)
         {
-            Spell blast = new ArcaneBlast(owner);
-            if (catalog.TryGetValue("arcane_blast", out var baseJson))
-                blast.LoadAttributes(baseJson, vars);
+            Spell spray = new ArcaneSpray(owner);
+            if (catalog.TryGetValue("arcane_spray", out var baseJson))
+                spray.LoadAttributes(baseJson, vars);
 
-            blast = new Doubler(blast);
+            // apply Doubler then SpeedModifier manually
+            spray = new Doubler(spray);
             if (catalog.TryGetValue("doubler", out var doublerJson))
-                blast.LoadAttributes(doublerJson, vars);
+                spray.LoadAttributes(doublerJson, vars);
 
-            blast = new SpeedModifier(blast);
+            spray = new SpeedModifier(spray);
             if (catalog.TryGetValue("speed_amp", out var speedJson))
-                blast.LoadAttributes(speedJson, vars);
+                spray.LoadAttributes(speedJson, vars);
 
             Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + Doubler + SpeedModifier");
-            return blast;
+            return spray;
         }
 
         // pick random base spell

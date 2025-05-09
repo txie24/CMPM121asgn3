@@ -1,80 +1,59 @@
-﻿// File: ModifierSpell.cs
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
 public abstract class ModifierSpell : Spell
 {
-    // The wrapped spell
+    // The spell we’re wrapping
     protected readonly Spell inner;
-    // Expose it so we can walk the chain
+
+    // Expose it publicly so subclasses can walk the chain
     public Spell InnerSpell => inner;
 
     protected ModifierSpell(Spell inner) : base(inner.Owner)
     {
         this.inner = inner;
+        // Initialize modifiers on construction
+        mods = new StatBlock();
+        InjectMods(mods);
+        Debug.Log($"[ModifierSpell] Created {this.GetType().Name} wrapping {inner.DisplayName}");
     }
 
     public override string DisplayName => $"{inner.DisplayName} {Suffix}";
     public override int IconIndex => inner.IconIndex;
     protected abstract string Suffix { get; }
 
-    // Delegate base stats to inner, then our StatBlock mods will apply
+    // Delegate all base stats to our inner, then let our StatBlock mods apply
     protected override float BaseDamage => inner.Damage;
     protected override float BaseMana => inner.Mana;
     protected override float BaseCooldown => inner.Cooldown;
     protected override float BaseSpeed => inner.Speed;
 
-    // Rebuild our StatBlock whenever JSON is reloaded
     public override void LoadAttributes(JObject j, Dictionary<string, float> vars)
     {
+        // If you need the JSON for this modifier itself, parse it here
+        // Then reapply your InjectMods to rebuild mods from scratch
         mods = new StatBlock();
         InjectMods(mods);
+
+        Debug.Log($"[ModifierSpell] {GetType().Name} final values - " +
+                  $"Damage: {Damage:F2}, Mana: {Mana:F2}, " +
+                  $"Cooldown: {Cooldown:F2}, Speed: {Speed:F2}");
     }
 
-    // The single Cast pipeline that handles ALL modifiers
+    // By default, modifiers just pass through
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        // 1) Find the true leaf spell (the one that actually spawns the projectile)
-        Spell leaf = inner;
-        while (leaf is ModifierSpell ms)
-            leaf = ms.InnerSpell;
-
-        // 2) Aggregate *all* StatBlock mods from this → leaf
-        var aggregated = new StatBlock();
-        var stack = new Stack<ModifierSpell>();
-        for (Spell s = this; s is ModifierSpell m; s = m.InnerSpell)
-            stack.Push(m);
-        while (stack.Count > 0)
-            stack.Pop().InjectMods(aggregated);
-
-        // 3) Swap that merged StatBlock into the leaf
-        var originalLeafMods = leaf.mods;
-        leaf.mods = aggregated;
-
-        // 4) Run every wrapper’s PreCast (top→down)
-        for (Spell s = this; s is ModifierSpell m; s = m.InnerSpell)
-            yield return m.PreCast(from, to);
-
-        // 5) Fire the whole chain—down to the leaf
-        yield return inner.TryCast(from, to);
-
-        // 6) Run every wrapper’s PostCast (down→up)
-        var postStack = new Stack<ModifierSpell>();
-        for (Spell s = this; s is ModifierSpell m; s = m.InnerSpell)
-            postStack.Push(m);
-        while (postStack.Count > 0)
-            yield return postStack.Pop().PostCast(from, to);
-
-        // 7) Restore the leaf’s original mods
-        leaf.mods = originalLeafMods;
+        yield return ApplyModifierEffect(from, to);
     }
 
-    // Hooks for one‑off behavior; override if needed
-    protected virtual IEnumerator PreCast(Vector3 from, Vector3 to) { yield break; }
-    protected virtual IEnumerator PostCast(Vector3 from, Vector3 to) { yield break; }
+    // Override this in modifiers that need special behavior
+    protected virtual IEnumerator ApplyModifierEffect(Vector3 from, Vector3 to)
+    {
+        yield return inner.TryCast(from, to);
+    }
 
-    // Each modifier just adds its own stats here
+    // Each modifier injects its own ValueMods here
     protected abstract void InjectMods(StatBlock mods);
 }
