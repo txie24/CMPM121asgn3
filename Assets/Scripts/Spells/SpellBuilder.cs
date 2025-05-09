@@ -2,6 +2,7 @@ using UnityEngine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
+using System.Linq;  // for Count and Enumerable extensions
 
 /// <summary>
 /// Builds a random Spell by instantiating global‐namespace spell classes
@@ -11,7 +12,6 @@ using System.Collections.Generic;
 public class SpellBuilder
 {
     private readonly Dictionary<string, JObject> catalog;
-    private readonly System.Random rng = new System.Random();
 
     // JSON keys for base spells and modifiers
     static readonly string[] BaseKeys = {
@@ -41,8 +41,8 @@ public class SpellBuilder
         }
         else
         {
-            catalog = JsonConvert.
-                DeserializeObject<Dictionary<string, JObject>>(ta.text);
+            catalog = JsonConvert
+                .DeserializeObject<Dictionary<string, JObject>>(ta.text);
             Debug.Log($"SpellBuilder loaded {catalog.Count} spells.");
         }
     }
@@ -54,35 +54,38 @@ public class SpellBuilder
         int wave = spawner != null ? spawner.currentWave : 1;
 
         // RPN vars
-        var vars = new Dictionary<string,float> {
+        var vars = new Dictionary<string, float> {
             { "power", owner.spellPower },
             { "wave",  wave }
         };
 
-        // wave 1: always a plain ArcaneBolt
+        // wave 1: always a plain ArcaneBolt (or customized test spell)
         if (wave <= 1)
         {
-            // Force ArcaneSpray + HomingModifier for wave 1
-            Spell blast = new ArcaneBlast(owner);
-            if (catalog.TryGetValue("arcane_blast", out var baseJson))
-                blast.LoadAttributes(baseJson, vars);
+            Spell spray = new ArcaneSpray(owner);
+            if (catalog.TryGetValue("arcane_spray", out var baseJson))
+                spray.LoadAttributes(baseJson, vars);
 
-            blast = new Splitter(blast);
-            if (catalog.TryGetValue("splitter", out var modJson))
-                blast.LoadAttributes(modJson, vars);
+            // apply Doubler then SpeedModifier manually
+            spray = new Doubler(spray);
+            if (catalog.TryGetValue("doubler", out var doublerJson))
+                spray.LoadAttributes(doublerJson, vars);
 
-            Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + KnockbackModifier");
-            return blast;
+            spray = new SpeedModifier(spray);
+            if (catalog.TryGetValue("speed_amp", out var speedJson))
+                spray.LoadAttributes(speedJson, vars);
+
+            Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + Doubler + SpeedModifier");
+            return spray;
         }
 
-
-        // Ensure true randomness with a new seed based on current time
-        System.Random localRng = new System.Random(System.DateTime.Now.Millisecond + System.Environment.TickCount);
-        
         // pick random base spell
+        var localRng = new System.Random(
+            System.DateTime.Now.Millisecond + System.Environment.TickCount
+        );
         int b = localRng.Next(BaseKeys.Length);
         Debug.Log($"Selected base spell index: {b}, spell type: {BaseKeys[b]}");
-        
+
         Spell s = CreateRandomBaseSpell(owner, b);
         if (catalog.TryGetValue(BaseKeys[b], out var bd))
             s.LoadAttributes(bd, vars);
@@ -90,19 +93,36 @@ public class SpellBuilder
             Debug.LogError($"Failed to find base spell: {BaseKeys[b]} in catalog");
 
         // wrap with 0–2 random modifiers
-        int mods = localRng.Next(3); // 0, 1, or 2 modifiers
-        Debug.Log($"Applying {mods} modifiers");
-        
-        for (int i = 0; i < mods; i++)
+        int modCount = localRng.Next(3); // 0, 1, or 2
+        Debug.Log($"Applying {modCount} modifiers");
+
+        // 1) Pick your mods into a list
+        var modIndices = new List<int>();
+        for (int i = 0; i < modCount; i++)
         {
             int m = localRng.Next(ModifierKeys.Length);
-            Debug.Log($"Selected modifier index: {m}, modifier type: {ModifierKeys[m]}");
-            
+            Debug.Log($"Selected modifier index: {m}, type: {ModifierKeys[m]}");
+            modIndices.Add(m);
+        }
+
+        // 2) If any of them is Doubler (index 1), move it to the front
+        const int doublerKeyIndex = 1; // ModifierKeys[1] == "doubler"
+        int doublerCount = modIndices.Count(x => x == doublerKeyIndex);
+        if (doublerCount > 0)
+        {
+            modIndices.RemoveAll(x => x == doublerKeyIndex);
+            for (int i = 0; i < doublerCount; i++)
+                modIndices.Insert(0, doublerKeyIndex);
+        }
+
+        // 3) Apply in that order
+        foreach (int m in modIndices)
+        {
             s = ApplyRandomModifier(s, m);
             if (catalog.TryGetValue(ModifierKeys[m], out var md))
                 s.LoadAttributes(md, vars);
             else
-                Debug.LogError($"Failed to find modifier: {ModifierKeys[m]} in catalog");
+                Debug.LogError($"Missing modifier in catalog: {ModifierKeys[m]}");
         }
 
         Debug.Log($"Final spell created: {s.DisplayName}");
