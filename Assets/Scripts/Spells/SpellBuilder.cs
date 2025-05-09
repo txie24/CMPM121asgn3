@@ -66,14 +66,16 @@ public class SpellBuilder
             if (catalog.TryGetValue("arcane_spray", out var baseJson))
                 spray.LoadAttributes(baseJson, vars);
 
-            // apply Doubler then SpeedModifier manually
+
+            spray = new HomingModifier(spray);
+            if (catalog.TryGetValue("homing", out var homingJson))
+                spray.LoadAttributes(homingJson, vars);
+
             spray = new Doubler(spray);
             if (catalog.TryGetValue("doubler", out var doublerJson))
                 spray.LoadAttributes(doublerJson, vars);
 
-            spray = new SpeedModifier(spray);
-            if (catalog.TryGetValue("speed_amp", out var speedJson))
-                spray.LoadAttributes(speedJson, vars);
+
 
             Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + Doubler + SpeedModifier");
             return spray;
