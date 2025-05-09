@@ -18,7 +18,8 @@ public class SpellBuilder
         "arcane_bolt",
         "arcane_spray",
         "magic_missile",
-        "arcane_blast"
+        "arcane_blast",
+        "railgun",
     };
     static readonly string[] ModifierKeys = {
         "splitter",
@@ -26,7 +27,8 @@ public class SpellBuilder
         "damage_amp",
         "speed_amp",
         "chaos",
-        "homing"
+        "homing",
+        "knockback",
     };
 
     public SpellBuilder()
@@ -61,16 +63,16 @@ public class SpellBuilder
         if (wave <= 1)
         {
             // Force ArcaneSpray + HomingModifier for wave 1
-            Spell spray = new ArcaneSpray(owner);
-            if (catalog.TryGetValue("arcane_spray", out var baseJson))
-                spray.LoadAttributes(baseJson, vars);
+            Spell blast = new ArcaneBlast(owner);
+            if (catalog.TryGetValue("arcane_blast", out var baseJson))
+                blast.LoadAttributes(baseJson, vars);
 
-            spray = new HomingModifier(spray);
-            if (catalog.TryGetValue("homing", out var modJson))
-                spray.LoadAttributes(modJson, vars);
+            blast = new DamageMagnifier(blast);
+            if (catalog.TryGetValue("damage_amp", out var modJson))
+                blast.LoadAttributes(modJson, vars);
 
-            Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + HomingModifier");
-            return spray;
+            Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + KnockbackModifier");
+            return blast;
         }
 
 
@@ -115,6 +117,7 @@ public class SpellBuilder
             case 1: return new ArcaneSpray(owner);
             case 2: return new MagicMissile(owner);
             case 3: return new ArcaneBlast(owner);
+            case 4: return new Railgun(owner);
             default: return new ArcaneBolt(owner);
         }
     }
@@ -129,6 +132,7 @@ public class SpellBuilder
             case 3: return new SpeedModifier(inner);
             case 4: return new ChaoticModifier(inner);
             case 5: return new HomingModifier(inner);
+            case 6: return new KnockbackModifier(inner);
             default: return inner;
         }
     }

@@ -8,7 +8,7 @@ public sealed class DamageMagnifier : ModifierSpell
     private float damageMultiplier = 1.5f;
     private float manaMultiplier = 1.5f;
     private string modifierName = "damage-amplified";
-    
+
     public DamageMagnifier(Spell inner) : base(inner) { }
 
     protected override string Suffix => modifierName;
@@ -16,10 +16,10 @@ public sealed class DamageMagnifier : ModifierSpell
     public override void LoadAttributes(JObject j, Dictionary<string, float> vars)
     {
         Debug.Log("[DamageMagnifier] Loading attributes from JSON");
-        
+
         // Load name
         modifierName = j["name"]?.Value<string>() ?? "damage-amplified";
-        
+
         // Load damage multiplier using RPN
         if (j["damage_multiplier"] != null)
         {
@@ -27,7 +27,7 @@ public sealed class DamageMagnifier : ModifierSpell
             damageMultiplier = RPNEvaluator.SafeEvaluateFloat(expr, vars, 1.5f);
             Debug.Log($"[DamageMagnifier] Loaded damage_multiplier={damageMultiplier} from expression '{expr}'");
         }
-        
+
         // Load mana multiplier using RPN
         if (j["mana_multiplier"] != null)
         {
@@ -35,8 +35,8 @@ public sealed class DamageMagnifier : ModifierSpell
             manaMultiplier = RPNEvaluator.SafeEvaluateFloat(expr, vars, 1.5f);
             Debug.Log($"[DamageMagnifier] Loaded mana_multiplier={manaMultiplier} from expression '{expr}'");
         }
-        
-        // Call base class to update modifiers
+
+        // Register our mods
         base.LoadAttributes(j, vars);
     }
 
@@ -46,11 +46,21 @@ public sealed class DamageMagnifier : ModifierSpell
         mods.damage.Add(new ValueMod(ModOp.Mul, damageMultiplier));
         mods.mana.Add(new ValueMod(ModOp.Mul, manaMultiplier));
     }
-    
+
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
         Debug.Log($"[DamageMagnifier] Casting spell with damage={Damage}, mana={Mana}");
-        // Simply pass through to inner spell with our modifiers applied
+
+        // 1) Save original inner mods
+        var originalInnerMods = inner.mods;
+
+        // 2) Swap in our wrapper’s mods so inner.Damage/Mana include your multipliers
+        inner.mods = this.mods;
+
+        // 3) Cast the inner spell (now with amplified stats)
         yield return inner.TryCast(from, to);
+
+        // 4) Restore the inner spell’s original mods
+        inner.mods = originalInnerMods;
     }
 }

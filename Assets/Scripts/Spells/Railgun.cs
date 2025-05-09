@@ -82,7 +82,7 @@ public sealed class Railgun : Spell
                     int amount = Mathf.RoundToInt(Damage);
                     var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
                     hit.Damage(dmg);
-                    Debug.Log($"[{displayName}] Pierced {hit.owner.name} for {amount} dmg");
+                    Debug.Log($"[{displayName}] Hit {hit.owner.name} for {amount} dmg");
                 }
             });
 

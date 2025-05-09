@@ -69,7 +69,7 @@ public sealed class ArcaneBolt : Spell
     }
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
-    {
+    { 
         Debug.Log($"[{displayName}] Casting ▶ dmg={Damage:F1} ({damageType}), mana={Mana:F1}, spd={Speed:F1}");
 
         GameManager.Instance.projectileManager.CreateProjectile(
