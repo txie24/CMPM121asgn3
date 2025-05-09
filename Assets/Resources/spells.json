@@ -63,7 +63,7 @@
    "doubler": {
        "name": "doubled",
        "description": "Spell is cast a second time after a small delay; increased mana cost and cooldown.",
-       "delay": "0.5",
+       "delay": "0.3",
        "mana_multiplier": "1.5",
        "cooldown_multiplier": "1.5"
    },
@@ -87,14 +87,14 @@
        "projectile_trajectory": "homing"
    },
    "knockback": {
-    "name": "knockback",
-    "description": "Applies knockback to the enemy hit.",
-    "force": "10"
+       "name": "knockback",
+       "description": "Applies knockback to the enemy hit.",
+       "force": "10"
     },
 "   bounce": {
-    "name": "bounce",
-    "description": "Bounces to another enemy nearby.",
-    "count": "2",
-    "range": "5"
+        "name": "bounce",
+        "description": "Bounces to another enemy nearby.",
+        "count": "2",
+        "range": "5"
 }
 }

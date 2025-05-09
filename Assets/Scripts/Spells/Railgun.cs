@@ -1,5 +1,4 @@
 // File: Assets/Scripts/Spells/Railgun.cs
-
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -25,26 +24,26 @@ public sealed class Railgun : Spell
 
     protected override float BaseDamage => RPNEvaluator.SafeEvaluateFloat(
         damageExpr,
-        GetVars(),
+        new Dictionary<string, float> {
+            { "power", owner.spellPower },
+            { "wave", GetCurrentWave() }
+        },
         50f);
 
     protected override float BaseSpeed => RPNEvaluator.SafeEvaluateFloat(
         speedExpr,
-        GetVars(),
+        new Dictionary<string, float> {
+            { "power", owner.spellPower },
+            { "wave", GetCurrentWave() }
+        },
         25f);
 
     protected override float BaseMana => baseMana;
     protected override float BaseCooldown => baseCooldown;
 
-    private Dictionary<string, float> GetVars() => new()
+    float GetCurrentWave()
     {
-        { "power", owner.spellPower },
-        { "wave", GetCurrentWave() }
-    };
-
-    private float GetCurrentWave()
-    {
-        var spawner = UnityEngine.Object.FindFirstObjectByType<EnemySpawner>();
+        var spawner = Object.FindFirstObjectByType<EnemySpawner>();
         return spawner != null ? spawner.currentWave : 1;
     }
 
@@ -65,7 +64,10 @@ public sealed class Railgun : Spell
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        Debug.Log($"[{displayName}] Casting ▶ dmg={Damage:F1}, spd={Speed:F1}, cooldown={Cooldown:F1}");
+        // Capture final damage & speed
+        float dmg = Damage;
+        float spd = Speed;
+        Debug.Log($"[{displayName}] Casting ▶ dmg={dmg:F1}, spd={spd:F1}, cooldown={Cooldown:F1}");
 
         Vector3 direction = (to - from).normalized;
 
@@ -74,14 +76,14 @@ public sealed class Railgun : Spell
             trajectory,
             from,
             direction,
-            Speed,
+            spd,
             (hit, impactPos) =>
             {
                 if (hit.team != owner.team)
                 {
-                    int amount = Mathf.RoundToInt(Damage);
-                    var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
-                    hit.Damage(dmg);
+                    int amount = Mathf.RoundToInt(dmg);
+                    var dmgObj = new global::Damage(amount, global::Damage.Type.ARCANE);
+                    hit.Damage(dmgObj);
                     Debug.Log($"[{displayName}] Hit {hit.owner.name} for {amount} dmg");
                 }
             });
