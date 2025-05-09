@@ -1,5 +1,4 @@
 // File: Assets/Scripts/Spells/MagicMissile.cs
-
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -23,8 +22,10 @@ public sealed class MagicMissile : Spell
     public override string DisplayName => displayName;
     public override int IconIndex => iconIndex;
 
-    protected override float BaseDamage {
-        get {
+    protected override float BaseDamage
+    {
+        get
+        {
             float pw = owner.spellPower;
             float wv = GetCurrentWave();
             float dmg = RPNEvaluator.SafeEvaluateFloat(
@@ -52,7 +53,7 @@ public sealed class MagicMissile : Spell
 
     float GetCurrentWave()
     {
-        var spawner = UnityEngine.Object.FindFirstObjectByType<EnemySpawner>();
+        var spawner = Object.FindFirstObjectByType<EnemySpawner>();
         return spawner != null ? spawner.currentWave : 1;
     }
 
@@ -73,26 +74,32 @@ public sealed class MagicMissile : Spell
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        Debug.Log($"[{displayName}] Casting ▶ dmg={Damage:F1}, spd={Speed:F1}");
+        // 1) Capture the *final* Damage and Speed here,
+        //    before we schedule the projectile callback
+        float dmg = Damage;
+        float spd = Speed;
+        Debug.Log($"[{displayName}] Casting ▶ dmg={dmg:F1}, spd={spd:F1}");
 
         GameObject closestEnemy = GameManager.Instance.GetClosestEnemy(from);
-        Vector3 targetDirection = closestEnemy != null 
-            ? (closestEnemy.transform.position - from).normalized 
+        Vector3 targetDirection = closestEnemy != null
+            ? (closestEnemy.transform.position - from).normalized
             : (to - from).normalized;
 
+        // 2) Use the captured speed, not re‑querying Speed later
         GameManager.Instance.projectileManager.CreateProjectile(
             projectileSprite,
             trajectory,
             from,
             targetDirection,
-            Speed,
+            spd,
             (hit, impactPos) =>
             {
                 if (hit.team != owner.team)
                 {
-                    int amount = Mathf.RoundToInt(Damage);
-                    var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
-                    hit.Damage(dmg);
+                    // 3) Now use the *captured* dmg, so it stays amplified
+                    int amount = Mathf.RoundToInt(dmg);
+                    var dmgObj = new global::Damage(amount, global::Damage.Type.ARCANE);
+                    hit.Damage(dmgObj);
                     Debug.Log($"[{displayName}] Hit {hit.owner.name} for {amount} dmg");
                 }
             });
