@@ -1,3 +1,4 @@
+﻿// Bounce.cs
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,9 +8,9 @@ using Newtonsoft.Json.Linq;
 public sealed class BounceModifier : ModifierSpell
 {
     private int bounceCount = 2;
-    private float bounceRange = 5f;
+    private float bounceRange = 15f;
     private string modifierName = "bounce";
-    private string modifierDescription = "Bounces to another enemy nearby.";
+    private string modifierDescription = "Bounces to another enemy or in a random direction.";
 
     public BounceModifier(Spell inner) : base(inner) { }
 
@@ -18,73 +19,81 @@ public sealed class BounceModifier : ModifierSpell
     public override void LoadAttributes(JObject j, Dictionary<string, float> vars)
     {
         Debug.Log("[BounceModifier] Loading attributes from JSON");
+
         modifierName = j["name"]?.Value<string>() ?? modifierName;
         modifierDescription = j["description"]?.Value<string>() ?? modifierDescription;
 
-        if (j["count"] != null)
+        // read bounce count from json (fallback to existing value)
+        if (j["bounceCount"] != null)
         {
             bounceCount = Mathf.RoundToInt(
-                RPNEvaluator.SafeEvaluateFloat(j["count"].Value<string>(), vars, bounceCount));
-            Debug.Log($"[BounceModifier] Loaded count={bounceCount}");
+                RPNEvaluator.SafeEvaluateFloat(j["bounceCount"].Value<string>(), vars, bounceCount));
+            Debug.Log($"[BounceModifier] Loaded bounceCount={bounceCount}");
         }
-        if (j["range"] != null)
+
+        // read bounce range from json (fallback to existing value)
+        if (j["bounceRange"] != null)
         {
             bounceRange = RPNEvaluator.SafeEvaluateFloat(
-                j["range"].Value<string>(), vars, bounceRange);
-            Debug.Log($"[BounceModifier] Loaded range={bounceRange}");
+                j["bounceRange"].Value<string>(), vars, bounceRange);
+            Debug.Log($"[BounceModifier] Loaded bounceRange={bounceRange}");
         }
 
         base.LoadAttributes(j, vars);
     }
 
-    protected override void InjectMods(StatBlock mods)
-    {
-        // No stat modifications for Bounce
-    }
+    protected override void InjectMods(StatBlock mods) { }
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        // Snapshot existing projectiles
-        var before = Object
-            .FindObjectsByType<ProjectileController>(FindObjectsSortMode.None)
-            .ToList();
-
-        // Cast the wrapped spell chain
+        // snapshot existing projectiles
+        var before = Object.FindObjectsByType<ProjectileController>(FindObjectsSortMode.None).ToList();
+        // cast the wrapped spell
         yield return inner.TryCast(from, to);
-
-        // Identify new projectiles
+        // find the new ones
         var after = Object.FindObjectsByType<ProjectileController>(FindObjectsSortMode.None);
         var newProjs = after.Except(before);
 
-        // Attach bounce logic: spawn new projectile on every hit
         foreach (var ctrl in newProjs)
         {
             ctrl.OnHit += (hit, impactPos) =>
-            {
-                // Always trigger bounce regardless of kill
-                owner.StartCoroutine(PerformBounce(impactPos, bounceCount));
-            };
+                owner.StartCoroutine(PerformBounce(impactPos, hit.owner, bounceCount));
         }
-
         yield return null;
     }
 
-    private IEnumerator PerformBounce(Vector3 origin, int remaining)
+    private IEnumerator PerformBounce(Vector3 origin, GameObject previousTarget, int remaining)
     {
         if (remaining <= 0)
             yield break;
 
-        // Find the closest enemy to bounce towards
-        GameObject next = GameManager.Instance.GetClosestEnemy(origin);
-        if (next == null)
-            yield break;
+        // gather enemies except the one we just hit, within bounceRange
+        var others = Object
+            .FindObjectsByType<EnemyController>(FindObjectsSortMode.None)
+            .Select(ec => ec.gameObject)
+            .Where(go => go != previousTarget)
+            .Where(go => Vector3.Distance(origin, go.transform.position) <= bounceRange)
+            .ToList();
 
-        Vector3 dir = (next.transform.position - origin).normalized;
+        Vector3 dir;
+        if (others.Count > 0)
+        {
+            // home in on the closest valid target
+            var next = others
+                .OrderBy(go => Vector3.Distance(origin, go.transform.position))
+                .First();
+            dir = (next.transform.position - origin).normalized;
+        }
+        else
+        {
+            // no enemy in range? still bounce off in a random direction
+            dir = Random.insideUnitCircle.normalized;
+        }
 
-        // Spawn homing projectile at the bounce point
+        // spawn the next projectile
         GameManager.Instance.projectileManager.CreateProjectile(
             inner.IconIndex,
-            "homing",
+            "homing",        // will track if an enemy comes into view
             origin,
             dir,
             inner.Speed,
@@ -92,12 +101,10 @@ public sealed class BounceModifier : ModifierSpell
             {
                 if (hit2.team != owner.team)
                 {
-                    // Deal damage using the inner spell's value
                     int dmg = Mathf.RoundToInt(inner.Damage);
                     hit2.Damage(new global::Damage(dmg, global::Damage.Type.ARCANE));
-
-                    // Continue chaining bounces
-                    owner.StartCoroutine(PerformBounce(impactPos2, remaining - 1));
+                    // chain the next bounce
+                    owner.StartCoroutine(PerformBounce(impactPos2, hit2.owner, remaining - 1));
                 }
             }
         );

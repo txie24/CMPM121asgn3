@@ -95,5 +95,8 @@
         "name": "bounce",
         "description": "Bounces to another enemy nearby.",
         "count": "2",
+        "bounceRange": "15",
+        "bounceCount": "2",
+
 }
 }
