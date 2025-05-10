@@ -66,8 +66,8 @@ public class SpellBuilder
             if (catalog.TryGetValue("arcane_bolt", out var baseJson))
                 bolt.LoadAttributes(baseJson, vars);
 
-            bolt = new DamageMagnifier(bolt);
-            if (catalog.TryGetValue("damage_amp", out var modJson))
+            bolt = new KnockbackModifier(bolt);
+            if (catalog.TryGetValue("knockback", out var modJson))
                 bolt.LoadAttributes(modJson, vars);
 
             Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + KnockbackModifier");
