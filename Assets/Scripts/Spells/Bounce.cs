@@ -9,6 +9,8 @@ public sealed class BounceModifier : ModifierSpell
 {
     private int bounceCount = 2;
     private float bounceRange = 15f;
+    private float damageMultiplier = 0.5f;
+    private float speedMultiplier = 1.5f;      // default, will be overwritten by JSON
     private string modifierName = "bounce";
     private string modifierDescription = "Bounces to another enemy or in a random direction.";
 
@@ -23,20 +25,33 @@ public sealed class BounceModifier : ModifierSpell
         modifierName = j["name"]?.Value<string>() ?? modifierName;
         modifierDescription = j["description"]?.Value<string>() ?? modifierDescription;
 
-        // read bounce count from json (fallback to existing value)
         if (j["bounceCount"] != null)
         {
             bounceCount = Mathf.RoundToInt(
-                RPNEvaluator.SafeEvaluateFloat(j["bounceCount"].Value<string>(), vars, bounceCount));
+                RPNEvaluator.SafeEvaluateFloat(
+                    j["bounceCount"].Value<string>(), vars, bounceCount));
             Debug.Log($"[BounceModifier] Loaded bounceCount={bounceCount}");
         }
 
-        // read bounce range from json (fallback to existing value)
         if (j["bounceRange"] != null)
         {
             bounceRange = RPNEvaluator.SafeEvaluateFloat(
                 j["bounceRange"].Value<string>(), vars, bounceRange);
             Debug.Log($"[BounceModifier] Loaded bounceRange={bounceRange}");
+        }
+
+        if (j["damage_multiplier"] != null)
+        {
+            damageMultiplier = RPNEvaluator.SafeEvaluateFloat(
+                j["damage_multiplier"].Value<string>(), vars, damageMultiplier);
+            Debug.Log($"[BounceModifier] Loaded damageMultiplier={damageMultiplier}");
+        }
+
+        if (j["speedMultiplier"] != null)
+        {
+            speedMultiplier = RPNEvaluator.SafeEvaluateFloat(
+                j["speedMultiplier"].Value<string>(), vars, speedMultiplier);
+            Debug.Log($"[BounceModifier] Loaded speedMultiplier={speedMultiplier}");
         }
 
         base.LoadAttributes(j, vars);
@@ -46,19 +61,15 @@ public sealed class BounceModifier : ModifierSpell
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        // snapshot existing projectiles
         var before = Object.FindObjectsByType<ProjectileController>(FindObjectsSortMode.None).ToList();
-        // cast the wrapped spell
         yield return inner.TryCast(from, to);
-        // find the new ones
         var after = Object.FindObjectsByType<ProjectileController>(FindObjectsSortMode.None);
         var newProjs = after.Except(before);
 
         foreach (var ctrl in newProjs)
-        {
             ctrl.OnHit += (hit, impactPos) =>
                 owner.StartCoroutine(PerformBounce(impactPos, hit.owner, bounceCount));
-        }
+
         yield return null;
     }
 
@@ -67,43 +78,38 @@ public sealed class BounceModifier : ModifierSpell
         if (remaining <= 0)
             yield break;
 
-        // gather enemies except the one we just hit, within bounceRange
         var others = Object
             .FindObjectsByType<EnemyController>(FindObjectsSortMode.None)
             .Select(ec => ec.gameObject)
-            .Where(go => go != previousTarget)
-            .Where(go => Vector3.Distance(origin, go.transform.position) <= bounceRange)
+            .Where(go => go != previousTarget && Vector3.Distance(origin, go.transform.position) <= bounceRange)
             .ToList();
 
         Vector3 dir;
         if (others.Count > 0)
         {
-            // home in on the closest valid target
-            var next = others
-                .OrderBy(go => Vector3.Distance(origin, go.transform.position))
-                .First();
+            var next = others.OrderBy(go => Vector3.Distance(origin, go.transform.position)).First();
             dir = (next.transform.position - origin).normalized;
         }
         else
         {
-            // no enemy in range? still bounce off in a random direction
             dir = Random.insideUnitCircle.normalized;
         }
 
-        // spawn the next projectile
+        float spawnSpeed = inner.Speed * speedMultiplier;
+
         GameManager.Instance.projectileManager.CreateProjectile(
             inner.IconIndex,
-            "homing",        // will track if an enemy comes into view
+            "homing",
             origin,
             dir,
-            inner.Speed,
+            spawnSpeed,
             (hit2, impactPos2) =>
             {
                 if (hit2.team != owner.team)
                 {
-                    int dmg = Mathf.RoundToInt(inner.Damage);
-                    hit2.Damage(new global::Damage(dmg, global::Damage.Type.ARCANE));
-                    // chain the next bounce
+                    int baseDmg = Mathf.RoundToInt(inner.Damage);
+                    int bounceDmg = Mathf.RoundToInt(baseDmg * damageMultiplier);
+                    hit2.Damage(new global::Damage(bounceDmg, global::Damage.Type.ARCANE));
                     owner.StartCoroutine(PerformBounce(impactPos2, hit2.owner, remaining - 1));
                 }
             }

@@ -97,6 +97,9 @@
         "count": "2",
         "bounceRange": "15",
         "bounceCount": "2",
+        "damage_multiplier": "0.5",
+        "speedMultiplier ": "1.5",
+
 
 }
 }
