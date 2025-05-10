@@ -1,110 +1,73 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 
 public sealed class KnockbackModifier : ModifierSpell
 {
-    private float knockbackStrength = 5f;
+    private float damageMultiplier = 0.5f;
+    private float knockbackForce = 20f;
     private string modifierName = "knockback";
-    private string modifierDescription = "Adds a knockback effect to the spell.";
-    
+    private string modifierDescription = "Adds a knockback effect.";
+
     public KnockbackModifier(Spell inner) : base(inner) { }
 
     protected override string Suffix => modifierName;
 
-    public override void LoadAttributes(JObject j, Dictionary<string,float> vars)
+    public override void LoadAttributes(JObject j, Dictionary<string, float> vars)
     {
+        // 1) Parse JSON fields first
+        modifierName = j["name"]?.Value<string>() ?? modifierName;
+        modifierDescription = j["description"]?.Value<string>() ?? modifierDescription;
+
+        if (j["damage_multiplier"] != null)
+            damageMultiplier = RPNEvaluator.SafeEvaluateFloat(
+                j["damage_multiplier"].Value<string>(), vars, damageMultiplier);
+
+        if (j["force"] != null)
+            knockbackForce = RPNEvaluator.SafeEvaluateFloat(
+                j["force"].Value<string>(), vars, knockbackForce);
+
+        // 2) Then rebuild StatBlock.mods with updated multiplier
         base.LoadAttributes(j, vars);
-        
-        modifierName = j["name"]?.Value<string>() ?? "knockback";
-        modifierDescription = j["description"]?.Value<string>() ?? "Adds a knockback effect to the spell.";
-        
-        if (j["knockback_strength"] != null)
-        {
-            string expr = j["knockback_strength"].Value<string>();
-            knockbackStrength = RPNEvaluator.SafeEvaluateFloat(expr, vars, 5f);
-        }
     }
 
     protected override void InjectMods(StatBlock mods)
     {
-        // No stat modifications needed for knockback, handled in Cast
+        // Inject damage multiplier so inner damage is scaled
+        mods.damage.Add(new ValueMod(ModOp.Mul, damageMultiplier));
     }
-    
-    protected override IEnumerator Cast(Vector3 from, Vector3 to)
-    {
-        // Store the original mods
-        StatBlock originalMods = inner.mods;
-        
-        Debug.Log($"[KnockbackModifier] Casting knockback spell with strength={knockbackStrength:F1}");
-        
-        // Get the direction from the from position to the to position
-        Vector3 direction = (to - from).normalized;
-        
-        // Use the inner spell's projectile sprite and trajectory
-        int projectileSprite = 0; // Default sprite, should be loaded from inner spell
-        string trajectory = "straight"; // Default trajectory, should be loaded from inner spell
-        if (inner is ArcaneBolt arcaneBolt)
-        {
-            var jObject = JObject.Parse(JsonUtility.ToJson(inner));
-            projectileSprite = jObject["projectileSprite"]?.Value<int>() ?? 0;
-            trajectory = jObject["trajectory"]?.Value<string>() ?? "straight";
-        }
 
-        // Create the projectile with the base spell's properties
-        GameManager.Instance.projectileManager.CreateProjectile(
-            projectileSprite,
-            trajectory,
-            from,
-            direction,
-            inner.Speed,
-            (hit, impactPos) => {
+    protected override IEnumerator ApplyModifierEffect(Vector3 from, Vector3 to)
+    {
+        // Snapshot existing projectiles
+        var before = Object
+            .FindObjectsByType<ProjectileController>(FindObjectsSortMode.None)
+            .ToList();
+
+        // Cast the base spell + inner modifiers normally
+        yield return inner.TryCast(from, to);
+
+        // Find only the new projectiles spawned
+        var after = Object.FindObjectsByType<ProjectileController>(FindObjectsSortMode.None);
+        var newOnes = after.Except(before);
+
+        // Attach knockback to each new projectile's OnHit
+        foreach (var ctrl in newOnes)
+        {
+            ctrl.OnHit += (hit, impactPos) =>
+            {
                 if (hit.team != owner.team)
                 {
-                    int amount = Mathf.RoundToInt(inner.Damage);
-                    var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
-                    hit.Damage(dmg);
-                    Debug.Log($"[KnockbackModifier] Hit {hit.owner.name} for {amount} damage");
-
-                    // Apply knockback using the hit.owner (GameObject)
-                    if (hit.owner != null)
+                    var rb = hit.owner.GetComponent<Rigidbody2D>();
+                    if (rb != null && rb.bodyType == RigidbodyType2D.Dynamic)
                     {
-                        Rigidbody2D enemyRb = hit.owner.GetComponent<Rigidbody2D>();
-                        if (enemyRb != null && enemyRb.bodyType == RigidbodyType2D.Dynamic)
-                        {
-                            Vector2 knockbackDirection = (hit.owner.transform.position - impactPos).normalized;
-                            enemyRb.AddForce(knockbackDirection * knockbackStrength, ForceMode2D.Impulse);
-                            Debug.Log($"[KnockbackModifier] Applied knockback to {hit.owner.name} with strength {knockbackStrength:F1}");
-                        }
+                        Vector2 dir = (hit.owner.transform.position - impactPos).normalized;
+                        rb.AddForce(dir * knockbackForce, ForceMode2D.Impulse);
                     }
                 }
-            }
-        );
-        
-        // Restore original mods
-        inner.mods = originalMods;
-        
-        yield return null;
-    }
-    
-    // Helper method to merge StatBlocks (optional, included for consistency)
-    private StatBlock MergeStatBlocks(StatBlock a, StatBlock b)
-    {
-        StatBlock result = new StatBlock();
-        
-        result.damage.AddRange(a.damage);
-        result.damage.AddRange(b.damage);
-        
-        result.mana.AddRange(a.mana);
-        result.mana.AddRange(b.mana);
-        
-        result.speed.AddRange(a.speed);
-        result.speed.AddRange(b.speed);
-        
-        result.cd.AddRange(a.cd);
-        result.cd.AddRange(b.cd);
-        
-        return result;
+            };
+        }
     }
 }

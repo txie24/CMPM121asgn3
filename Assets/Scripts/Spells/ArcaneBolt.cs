@@ -8,17 +8,17 @@ using Newtonsoft.Json.Linq;
 
 public sealed class ArcaneBolt : Spell
 {
-    string displayName;
-    Damage.Type damageType;
-    float baseMana;
-    float baseCooldown;
-    int iconIndex;
-    string trajectory;
-    int projectileSprite;
+    private string displayName;
+    private Damage.Type damageType;
+    private float baseMana;
+    private float baseCooldown;
+    private int iconIndex;
+    private string trajectory;
+    private int projectileSprite;
 
     // RPN expressions for dynamic scaling
-    string damageExpr;
-    string speedExpr;
+    private string damageExpr;
+    private string speedExpr;
 
     public ArcaneBolt(SpellCaster owner) : base(owner) { }
 
@@ -44,7 +44,7 @@ public sealed class ArcaneBolt : Spell
     protected override float BaseMana => baseMana;
     protected override float BaseCooldown => baseCooldown;
 
-    float GetCurrentWave()
+    private float GetCurrentWave()
     {
         var spawner = UnityEngine.Object.FindFirstObjectByType<EnemySpawner>();
         return spawner != null ? spawner.currentWave : 1;
@@ -55,7 +55,7 @@ public sealed class ArcaneBolt : Spell
         displayName = j["name"].Value<string>();
         iconIndex = j["icon"].Value<int>();
 
-        // Save damage expression for dynamic evaluation
+        // Save RPN expressions
         damageExpr = j["damage"]["amount"].Value<string>();
         var dt = j["damage"]["type"].Value<string>();
         damageType = (Damage.Type)Enum.Parse(typeof(Damage.Type), dt, true);
@@ -69,22 +69,27 @@ public sealed class ArcaneBolt : Spell
     }
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
-    { 
-        Debug.Log($"[{displayName}] Casting ▶ dmg={Damage:F1} ({damageType}), mana={Mana:F1}, spd={Speed:F1}");
+    {
+        // 1) Capture the *final* damage & speed at cast time
+        float dmg = Damage;
+        float spd = Speed;
 
+        Debug.Log($"[{displayName}] Casting ▶ dmg={dmg:F1} ({damageType}), mana={Mana:F1}, spd={spd:F1}");
+
+        // 2) Fire the projectile using captured values
         GameManager.Instance.projectileManager.CreateProjectile(
             projectileSprite,
             trajectory,
             from,
             to - from,
-            Speed,
+            spd,
             (hit, impactPos) =>
             {
                 if (hit.team != owner.team)
                 {
-                    int amt = Mathf.RoundToInt(this.Damage);
-                    var dmg = new global::Damage(amt, damageType);
-                    hit.Damage(dmg);
+                    int amt = Mathf.RoundToInt(dmg);
+                    var dmgObj = new global::Damage(amt, damageType);
+                    hit.Damage(dmgObj);
                     Debug.Log($"[{displayName}] Hit {hit.owner.name} for {amt} ({damageType})");
                 }
             });
