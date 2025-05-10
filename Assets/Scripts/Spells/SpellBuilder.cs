@@ -29,6 +29,7 @@ public class SpellBuilder
         "chaos",
         "homing",
         "knockback",
+        "bounce",
     };
 
     public SpellBuilder()
@@ -66,8 +67,8 @@ public class SpellBuilder
             if (catalog.TryGetValue("arcane_bolt", out var baseJson))
                 bolt.LoadAttributes(baseJson, vars);
 
-            bolt = new KnockbackModifier(bolt);
-            if (catalog.TryGetValue("knockback", out var modJson))
+            bolt = new BounceModifier(bolt);
+            if (catalog.TryGetValue("bounce", out var modJson))
                 bolt.LoadAttributes(modJson, vars);
 
             Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + KnockbackModifier");
@@ -145,7 +146,8 @@ public class SpellBuilder
             case 3: return new SpeedModifier(inner);
             case 4: return new ChaoticModifier(inner);
             case 5: return new HomingModifier(inner);
-            case 6: return new KnockbackModifier(inner);
+            case 6: return new KnockbackModifier(inner); 
+            case 7: return new BounceModifier(inner);
             default: return inner;
         }
     }
