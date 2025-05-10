@@ -89,7 +89,6 @@
    "knockback": {
        "name": "knockback",
        "description": "Applies knockback to the enemy hit.",
-       "damage_multiplier": "0.50",
        "force": "20"
     },
 "   bounce": {
