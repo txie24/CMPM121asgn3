@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System;
 
 public class ProjectileManager : MonoBehaviour
@@ -16,7 +16,6 @@ public class ProjectileManager : MonoBehaviour
     {
         if (which < 0 || which >= projectiles.Length)
         {
-            Debug.LogWarning($"ProjectileManager: Index {which} is out of bounds. Max = {projectiles.Length-1}, using index 0 instead.");
             which = 0;
         }
 
@@ -38,7 +37,6 @@ public class ProjectileManager : MonoBehaviour
     {
         if (which < 0 || which >= projectiles.Length)
         {
-            Debug.LogWarning($"ProjectileManager: Index {which} is out of bounds. Max = {projectiles.Length-1}, using index 0 instead.");
             which = 0;
         }
 
@@ -61,7 +59,6 @@ public class ProjectileManager : MonoBehaviour
     {
         if (which < 0 || which >= projectiles.Length)
         {
-            Debug.LogWarning($"ProjectileManager: Index {which} is out of bounds. Max = {projectiles.Length-1}, using index 0 instead.");
             which = 0;
         }
 
