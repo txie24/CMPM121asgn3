@@ -1,13 +1,16 @@
+// File: Assets/Scripts/Spells/HomingModifier.cs
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
+using System.Collections.Generic;   // for Dictionary<,>
+using Newtonsoft.Json.Linq;         // for JObject
 
 public sealed class HomingModifier : ModifierSpell
 {
-    private float damageMultiplier = 0.75f;
-    private float manaAdder = 10f;
+    // these fields are loaded from JSON
+    private float damageMultiplier = 1f;
+    private float manaAdder = 0f;
     private string modifierName = "homing";
+    private string trajectoryOverride = "homing";
 
     public HomingModifier(Spell inner) : base(inner) { }
 
@@ -15,192 +18,61 @@ public sealed class HomingModifier : ModifierSpell
 
     public override void LoadAttributes(JObject j, Dictionary<string, float> vars)
     {
-        Debug.Log("[HomingModifier] Loading attributes from JSON");
+        // 1) Name / Display suffix
+        modifierName = j["name"]?.Value<string>() ?? modifierName;
 
-        // Load name
-        modifierName = j["name"]?.Value<string>() ?? "homing";
-
-        // Load damage multiplier using RPN
+        // 2) Damage multiplier
         if (j["damage_multiplier"] != null)
-        {
-            string expr = j["damage_multiplier"].Value<string>();
-            damageMultiplier = RPNEvaluator.SafeEvaluateFloat(expr, vars, 0.75f);
-            Debug.Log($"[HomingModifier] Loaded damage_multiplier={damageMultiplier} from expression '{expr}'");
-        }
+            damageMultiplier = RPNEvaluator.SafeEvaluateFloat(
+                j["damage_multiplier"].Value<string>(),
+                vars,
+                damageMultiplier
+            );
 
-        // Load mana adder using RPN
+        // 3) Mana adder
         if (j["mana_adder"] != null)
-        {
-            string expr = j["mana_adder"].Value<string>();
-            manaAdder = RPNEvaluator.SafeEvaluateFloat(expr, vars, 10f);
-            Debug.Log($"[HomingModifier] Loaded mana_adder={manaAdder} from expression '{expr}'");
-        }
+            manaAdder = RPNEvaluator.SafeEvaluateFloat(
+                j["mana_adder"].Value<string>(),
+                vars,
+                manaAdder
+            );
 
-        // Call base class to update modifiers
+        // 4) Which trajectory to force (must match your JSON key)
+        trajectoryOverride = j["projectile_trajectory"]?.Value<string>()
+                             ?? trajectoryOverride;
+
+        // rebuild this.mods with InjectMods
         base.LoadAttributes(j, vars);
     }
 
     protected override void InjectMods(StatBlock mods)
     {
-        Debug.Log($"[HomingModifier] Injecting mods: damage×{damageMultiplier}, mana+{manaAdder}");
+        // Multiply damage, then add to mana cost
         mods.damage.Add(new ValueMod(ModOp.Mul, damageMultiplier));
         mods.mana.Add(new ValueMod(ModOp.Add, manaAdder));
     }
 
-    protected override IEnumerator ApplyModifierEffect(Vector3 from, Vector3 to)
+    protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        Debug.Log($"[HomingModifier] Adding homing effect to {inner.DisplayName}");
+        // 1) Hijack trajectory
+        var pm = GameManager.Instance.projectileManager;
+        var previous = pm.forcedTrajectory;
+        pm.forcedTrajectory = trajectoryOverride;
 
-        // Handle different spell types appropriately
-        if (inner is ArcaneSpray spraySpell)
-        {
-            yield return CreateHomingSpray(from, to);
-        }
-        else if (inner is ArcaneBlast blastSpell)
-        {
-            yield return CreateHomingBlast(from, to);
-        }
-        else
-        {
-            // For simpler spells, just create a homing projectile
-            yield return CreateGenericHoming(from, to);
-        }
-    }
+        // 2) Drill down to the “leaf” spell (e.g. ArcaneSpray)
+        Spell leaf = inner;
+        while (leaf is ModifierSpell ms)
+            leaf = ms.InnerSpell;
 
-    private IEnumerator CreateHomingSpray(Vector3 from, Vector3 to)
-    {
-        Vector3 direction = (to - from).normalized;
-        float baseAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        // 3) Swap in our mods so leaf.Damage and leaf.Mana use them
+        var originalLeafMods = leaf.mods;
+        leaf.mods = this.mods;
 
-        // Estimate spray parameters
-        int projectileCount = Mathf.RoundToInt(inner.Damage) + 5; // Approximate based on damage
-        float sprayAngle = 60f;
-        float angleStep = sprayAngle / (projectileCount - 1);
-        float startAngle = baseAngle - sprayAngle / 2;
+        // 4) Cast the entire chain—including ArcaneSpray’s own loop—under homing
+        yield return inner.TryCast(from, to);
 
-        // Create homing projectiles in a spray pattern
-        for (int i = 0; i < projectileCount; i++)
-        {
-            float currentAngle = startAngle + i * angleStep;
-            Vector3 projectileDirection = new Vector3(
-                Mathf.Cos(currentAngle * Mathf.Deg2Rad),
-                Mathf.Sin(currentAngle * Mathf.Deg2Rad),
-                0);
-
-            // Find nearby enemy for better initial targeting
-            GameObject closestEnemy = GameManager.Instance.GetClosestEnemy(from);
-            Vector3 targetDirection = closestEnemy != null
-                ? (closestEnemy.transform.position - from).normalized
-                : projectileDirection;
-
-            GameManager.Instance.projectileManager.CreateProjectile(
-                inner.IconIndex,
-                "homing", // Use homing trajectory
-                from,
-                targetDirection,
-                inner.Speed,
-                (hit, impactPos) => {
-                    if (hit.team != owner.team)
-                    {
-                        int amount = Mathf.RoundToInt(Damage);
-                        var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
-                        hit.Damage(dmg);
-                    }
-                },
-                0.1f + inner.Speed / 40f // Approximate lifetime
-            );
-
-            yield return new WaitForSeconds(0.02f);
-        }
-    }
-
-    private IEnumerator CreateHomingBlast(Vector3 from, Vector3 to)
-    {
-        // Find closest enemy for initial targeting
-        GameObject closestEnemy = GameManager.Instance.GetClosestEnemy(from);
-        Vector3 targetDirection = closestEnemy != null
-            ? (closestEnemy.transform.position - from).normalized
-            : (to - from).normalized;
-
-        // Create primary homing projectile
-        GameManager.Instance.projectileManager.CreateProjectile(
-            inner.IconIndex,
-            "homing",
-            from,
-            targetDirection,
-            inner.Speed,
-            (hit, impactPos) => {
-                if (hit.team != owner.team)
-                {
-                    int amount = Mathf.RoundToInt(Damage);
-                    var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
-                    hit.Damage(dmg);
-
-                    // Create secondary explosion with homing projectiles
-                    CreateHomingSecondaryExplosion(impactPos, amount / 4);
-                }
-            }
-        );
-
-        yield return null;
-    }
-
-    private void CreateHomingSecondaryExplosion(Vector3 position, int damage)
-    {
-        int projectileCount = 8; // Default from ArcaneBlast
-        float angleStep = 360f / projectileCount;
-
-        for (int i = 0; i < projectileCount; i++)
-        {
-            float angle = i * angleStep;
-            Vector3 direction = new Vector3(
-                Mathf.Cos(angle * Mathf.Deg2Rad),
-                Mathf.Sin(angle * Mathf.Deg2Rad),
-                0).normalized;
-
-            GameManager.Instance.projectileManager.CreateProjectile(
-                inner.IconIndex,
-                "homing", // Use homing for secondary projectiles
-                position,
-                direction,
-                inner.Speed * 0.8f,
-                (hit, impactPos) => {
-                    if (hit.team != owner.team)
-                    {
-                        var dmg = new global::Damage(damage, global::Damage.Type.ARCANE);
-                        hit.Damage(dmg);
-                    }
-                },
-                0.3f // Default secondary lifetime
-            );
-        }
-    }
-
-    private IEnumerator CreateGenericHoming(Vector3 from, Vector3 to)
-    {
-        // Find closest enemy for better targeting
-        GameObject closestEnemy = GameManager.Instance.GetClosestEnemy(from);
-        Vector3 targetPos = closestEnemy != null ? closestEnemy.transform.position : to;
-        Vector3 direction = (targetPos - from).normalized;
-
-        // Create a single homing projectile
-        GameManager.Instance.projectileManager.CreateProjectile(
-            inner.IconIndex,
-            "homing",
-            from,
-            direction,
-            inner.Speed,
-            (hit, impactPos) => {
-                if (hit.team != owner.team)
-                {
-                    int amount = Mathf.RoundToInt(Damage);
-                    var dmg = new global::Damage(amount, global::Damage.Type.ARCANE);
-                    hit.Damage(dmg);
-                    Debug.Log($"[HomingModifier] Hit {hit.owner.name} for {amount} damage");
-                }
-            }
-        );
-
-        yield return null;
+        // 5) Restore
+        leaf.mods = originalLeafMods;
+        pm.forcedTrajectory = previous;
     }
 }

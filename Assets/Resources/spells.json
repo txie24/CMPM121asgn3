@@ -22,8 +22,8 @@
        "description": "A bolt that explodes into smaller bolts on impact.",
        "icon": 2,
        "N": "8 power 5 / +",
-       "damage": {"amount": "20 power 3 / +", "type": "arcane"},
-       "secondary_damage": "5 power 10 / +",
+       "damage": {"amount": "1", "type": "arcane"},
+       "secondary_damage": "1",
        "mana_cost": "1",
        "cooldown": "0",
        "projectile": {"trajectory": "straight", "speed": "12", "sprite": 0},
@@ -35,10 +35,10 @@
        "icon": 1,
        "N": "7 power 25 / +",
        "spray": "0.3",
-       "damage": {"amount": "3 power 5 / +", "type": "arcane"},
+       "damage": {"amount": "10", "type": "arcane"},
        "mana_cost": "1",
        "cooldown": "0.5",
-       "projectile": {"trajectory": "straight", "speed": "8", "sprite": 0, "lifetime": "0.1 power 100 / +"}
+       "projectile": {"trajectory": "straight", "speed": "8", "sprite": 0, "lifetime": "100"}
    },
    "railgun": {
        "name": "Railgun",
