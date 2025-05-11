@@ -3,7 +3,7 @@
        "name": "Arcane Bolt",
        "description": "A straight-flying bolt.",
        "icon": 0,
-       "damage": {"amount": "10", "type": "arcane"},
+       "damage": {"amount": "25 power 5 / +", "type": "arcane"},
        "mana_cost": "10",
        "cooldown": "0",
        "projectile": {"trajectory": "straight", "speed": "8 power 5 / +", "sprite": 0}
@@ -93,7 +93,7 @@
     },
 "   bounce": {
         "name": "bounce",
-        "description": "Bounces to another enemy nearby.",
+        "description": "Bounces to another enemy nearby, with decreased second knockback damage and increased speed.",
         "count": "2",
         "bounceRange": "15",
         "bounceCount": "2",

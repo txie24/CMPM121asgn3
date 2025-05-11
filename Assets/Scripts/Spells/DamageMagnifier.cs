@@ -1,3 +1,5 @@
+// File: Assets/Scripts/Spells/Modifiers/DamageMagnifier.cs
+
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,26 +19,23 @@ public sealed class DamageMagnifier : ModifierSpell
     {
         Debug.Log("[DamageMagnifier] Loading attributes from JSON");
 
-        // Load name
-        modifierName = j["name"]?.Value<string>() ?? "damage-amplified";
+        modifierName = j["name"]?.Value<string>() ?? modifierName;
 
-        // Load damage multiplier using RPN
         if (j["damage_multiplier"] != null)
         {
             string expr = j["damage_multiplier"].Value<string>();
-            damageMultiplier = RPNEvaluator.SafeEvaluateFloat(expr, vars, 1.5f);
-            Debug.Log($"[DamageMagnifier] Loaded damage_multiplier={damageMultiplier} from expression '{expr}'");
+            damageMultiplier = RPNEvaluator.SafeEvaluateFloat(expr, vars, damageMultiplier);
+            Debug.Log($"[DamageMagnifier] Loaded damage_multiplier={damageMultiplier}");
         }
 
-        // Load mana multiplier using RPN
         if (j["mana_multiplier"] != null)
         {
             string expr = j["mana_multiplier"].Value<string>();
-            manaMultiplier = RPNEvaluator.SafeEvaluateFloat(expr, vars, 1.5f);
-            Debug.Log($"[DamageMagnifier] Loaded mana_multiplier={manaMultiplier} from expression '{expr}'");
+            manaMultiplier = RPNEvaluator.SafeEvaluateFloat(expr, vars, manaMultiplier);
+            Debug.Log($"[DamageMagnifier] Loaded mana_multiplier={manaMultiplier}");
         }
 
-        // Register our mods
+        // this will rebuild this.mods via InjectMods
         base.LoadAttributes(j, vars);
     }
 
@@ -49,18 +48,21 @@ public sealed class DamageMagnifier : ModifierSpell
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        Debug.Log($"[DamageMagnifier] Casting spell with damage={Damage}, mana={Mana}");
+        Debug.Log($"[DamageMagnifier] Casting spell with amplified damage={Damage:F1}");
 
-        // 1) Save original inner mods
-        var originalInnerMods = inner.mods;
+        // 1) Find the deepest wrapped spell (the leaf)
+        Spell leaf = inner;
+        while (leaf is ModifierSpell ms)
+            leaf = ms.InnerSpell;
 
-        // 2) Swap in our wrapper’s mods so inner.Damage/Mana include your multipliers
-        inner.mods = this.mods;
+        // 2) Swap in our damage/mana mods on that leaf
+        var originalLeafMods = leaf.mods;
+        leaf.mods = this.mods;
 
-        // 3) Cast the inner spell (now with amplified stats)
+        // 3) Fire the entire chain (including Splitter → ArcaneSpray)
         yield return inner.TryCast(from, to);
 
-        // 4) Restore the inner spell’s original mods
-        inner.mods = originalInnerMods;
+        // 4) Restore the leaf’s original mods
+        leaf.mods = originalLeafMods;
     }
 }

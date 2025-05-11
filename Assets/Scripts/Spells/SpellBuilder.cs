@@ -67,9 +67,9 @@ public class SpellBuilder
             if (catalog.TryGetValue("arcane_bolt", out var baseJson))
                 bolt.LoadAttributes(baseJson, vars);
 
-            bolt = new BounceModifier(bolt);
-            if (catalog.TryGetValue("bounce", out var modJson))
-                bolt.LoadAttributes(modJson, vars);
+            bolt = new DamageMagnifier(bolt);
+            if (catalog.TryGetValue("damage_amp", out var dmgJson))
+                bolt.LoadAttributes(dmgJson, vars);
 
             Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + KnockbackModifier");
             return bolt;
