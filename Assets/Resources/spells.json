@@ -5,7 +5,7 @@
        "icon": 0,
        "damage": {"amount": "25 power 5 / +", "type": "arcane"},
        "mana_cost": "10",
-       "cooldown": "0",
+       "cooldown": "1.5",
        "projectile": {"trajectory": "straight", "speed": "8 power 5 / +", "sprite": 0}
    },
    "magic_missile":  {
@@ -13,8 +13,8 @@
        "description": "A homing bolt.",
        "icon": 4,
        "damage": {"amount": "10 power 3 / +", "type": "arcane"},
-       "mana_cost": "1",
-       "cooldown": "0",
+       "mana_cost": "20",
+       "cooldown": "3",
        "projectile": {"trajectory": "homing", "speed": "10", "sprite": 0}
    },
    "arcane_blast":  {
@@ -22,10 +22,10 @@
        "description": "A bolt that explodes into smaller bolts on impact.",
        "icon": 2,
        "N": "8 power 5 / +",
-       "damage": {"amount": "1", "type": "arcane"},
-       "secondary_damage": "1",
-       "mana_cost": "1",
-       "cooldown": "0",
+       "damage": {"amount": "20 power 3 / +", "type": "arcane"},
+       "secondary_damage": "5 power 10 / +",
+       "mana_cost": "15 power 5 / +",
+       "cooldown": "1.5",
        "projectile": {"trajectory": "straight", "speed": "12", "sprite": 0},
        "secondary_projectile": {"trajectory": "straight", "speed": "20", "lifetime": "0.1", "sprite": 0}
    },
@@ -36,7 +36,7 @@
        "N": "7 power 25 / +",
        "spray": "0.3",
        "damage": {"amount": "10", "type": "arcane"},
-       "mana_cost": "1",
+       "mana_cost": "15",
        "cooldown": "0.5",
        "projectile": {"trajectory": "straight", "speed": "8", "sprite": 0, "lifetime": "3"}
    },
@@ -45,7 +45,7 @@
        "description": "A high-damage, fast, straight-line piercing shot, that shoots through walls and enemies.",
        "icon": 8,
        "damage": { "amount": "20 power 2 * +" , "type": "arcane" },
-       "mana_cost": "10",
+       "mana_cost": "30",
        "cooldown": "10",
        "projectile": { "trajectory": "straight", "speed": "40", "sprite": 1,  "lifetime": "2" }
    },
