@@ -24,7 +24,7 @@ public class EnemySpawner : MonoBehaviour
         GameManager.Instance.playerWon = true;
         GameManager.Instance.IsPlayerDead = false;
         GameManager.Instance.state = GameManager.GameState.GAMEOVER;
-        Debug.Log("✅ You Win: all waves completed.");
+        Debug.Log(" You Win: all waves completed.");
     }
 
     void Start()
@@ -76,44 +76,47 @@ public class EnemySpawner : MonoBehaviour
         if (waveInProgress) yield break;
         waveInProgress = true;
 
-        // Scale player stats at the beginning of every wave
+        // 1) Scale player
         ScalePlayerForWave(currentWave);
 
-        // COUNTDOWN
+        // 2) Countdown
         GameManager.Instance.state = GameManager.GameState.COUNTDOWN;
         for (int i = 3; i > 0; i--)
         {
             GameManager.Instance.countdown = i;
             yield return new WaitForSeconds(1);
         }
-
         GameManager.Instance.countdown = 0;
+
+        // 3) In‑wave
         GameManager.Instance.state = GameManager.GameState.INWAVE;
 
-        // SPAWN ENEMIES
+        // 4) Spawn
         int totalSpawned = 0;
         foreach (var spawn in currentLevel.spawns)
             yield return StartCoroutine(SpawnEnemies(spawn, c => totalSpawned += c));
-
         lastWaveEnemyCount = totalSpawned;
 
-        // WAIT FOR ALL ENEMIES DEAD
+        // 5) Wait for clear
         yield return new WaitWhile(() => GameManager.Instance.enemy_count > 0);
 
-        // WIN CHECK
+        // 6) Win check (only non‑Endless)
         if (!isEndless && currentWave >= currentLevel.waves)
         {
             TriggerWin();
             yield break;
         }
 
+        // 7) Reward screen
         GameManager.Instance.state = GameManager.GameState.WAVEEND;
         GameManager.Instance.wavesCompleted++;
 
-        // PREPARE FOR NEXT WAVE
+        // 8) Prep next wave exactly like Easy/Medium
         currentWave++;
         waveInProgress = false;
     }
+
+
 
     IEnumerator SpawnEnemies(Spawn spawn, System.Action<int> onSpawnComplete = null)
     {
@@ -127,8 +130,8 @@ public class EnemySpawner : MonoBehaviour
         };
 
         int total = RPNEvaluator.SafeEvaluate(spawn.count, vars, 0);
-        int hp = spawn.hp != null 
-            ? RPNEvaluator.SafeEvaluate(spawn.hp, vars, baseEnemy.hp) 
+        int hp = spawn.hp != null
+            ? RPNEvaluator.SafeEvaluate(spawn.hp, vars, baseEnemy.hp)
             : baseEnemy.hp;
         float speed = spawn.speed != null
             ? RPNEvaluator.SafeEvaluate(spawn.speed, new() {
@@ -222,24 +225,22 @@ public class EnemySpawner : MonoBehaviour
 
         // Update HP, preserving health percentage
         int newMaxHP = Mathf.RoundToInt(rHP);
-        pc.hp.SetMaxHP(newMaxHP, true); // Preserve health percentage
+        pc.hp.SetMaxHP(newMaxHP, true);
 
         // Update mana and regen
         pc.spellcaster.max_mana = Mathf.RoundToInt(rMana);
-        pc.spellcaster.mana = pc.spellcaster.max_mana; // Refill mana
+        pc.spellcaster.mana = pc.spellcaster.max_mana;
         pc.spellcaster.mana_reg = Mathf.RoundToInt(rRe);
 
-        // Update spell power
+        // Update spell power and speed
         pc.spellcaster.spellPower = Mathf.RoundToInt(rPow);
-
-        // Update movement speed
         pc.speed = Mathf.RoundToInt(rSpd);
 
-        // Update UI to reflect new stats
+        // Refresh UI
         pc.healthui.SetHealth(pc.hp);
         pc.manaui.SetSpellCaster(pc.spellcaster);
 
         Debug.Log($" → PlayerStats: HP={pc.hp.hp}/{pc.hp.max_hp}, Mana={rMana:F1}, Regen={rRe:F1}, " +
-                $"Power={rPow:F1}, Speed={rSpd:F1}");
+                  $"Power={rPow:F1}, Speed={rSpd:F1}");
     }
 }

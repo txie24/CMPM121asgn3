@@ -57,8 +57,8 @@ public class RewardScreenManager : MonoBehaviour
         var state = GameManager.Instance.state;
         if (state == prevState) return;
 
-        if (state == GameManager.GameState.WAVEEND &&
-            spawner.currentWave <= spawner.currentLevel.waves)
+        // show reward screen on every WAVEEND (including endless)
+        if (state == GameManager.GameState.WAVEEND)
         {
             if (rewardCoroutine != null) StopCoroutine(rewardCoroutine);
             rewardCoroutine = StartCoroutine(ShowRewardScreen());
@@ -212,11 +212,11 @@ public class RewardScreenManager : MonoBehaviour
             return;
         }
 
-        // assign directly into the list (no AddSpell method) :contentReference[oaicite:1]{index=1}:contentReference[oaicite:2]{index=2}
+        // assign directly into the list
         playerSpellCaster.spells[slot] = offeredSpell;
         Debug.Log($"Added '{offeredSpell.DisplayName}' to slot {slot}.");
 
-        // refresh UI & close
+        // refresh UI & proceed
         UpdatePlayerSpellUI();
         OnNextWaveClicked();
     }

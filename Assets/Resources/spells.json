@@ -5,7 +5,7 @@
        "icon": 0,
        "damage": {"amount": "25 power 5 / +", "type": "arcane"},
        "mana_cost": "10",
-       "cooldown": "1.5",
+       "cooldown": "0",
        "projectile": {"trajectory": "straight", "speed": "8 power 5 / +", "sprite": 0}
    },
    "magic_missile":  {
