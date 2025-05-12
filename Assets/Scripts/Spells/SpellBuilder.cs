@@ -67,9 +67,15 @@ public class SpellBuilder
             if (catalog.TryGetValue("arcane_spray", out var baseJson))
                 spray.LoadAttributes(baseJson, vars);
 
-            spray = new BounceModifier(spray);
-            if (catalog.TryGetValue("bounce", out var bounceJson))
-                spray.LoadAttributes(bounceJson, vars);
+
+            spray = new HomingModifier(spray);
+            if (catalog.TryGetValue("homing", out var homingJson))
+                spray.LoadAttributes(homingJson, vars);
+
+
+            spray = new ChaoticModifier(spray);
+            if (catalog.TryGetValue("chaos", out var chaosJson))
+                spray.LoadAttributes(chaosJson, vars);
 
 
             Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + KnockbackModifier");
