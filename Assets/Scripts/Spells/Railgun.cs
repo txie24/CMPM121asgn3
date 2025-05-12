@@ -1,8 +1,9 @@
 // File: Assets/Scripts/Spells/Railgun.cs
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
+using System.Collections;                // for IEnumerator
+using System.Collections.Generic;       // for Dictionary<,>
+using System.Linq;                      // for Except()
+using Newtonsoft.Json.Linq;             // for JObject
 
 public sealed class Railgun : Spell
 {
@@ -16,6 +17,7 @@ public sealed class Railgun : Spell
 
     private string damageExpr;
     private string speedExpr;
+    private string lifetimeExpr;
 
     public Railgun(SpellCaster owner) : base(owner) { }
 
@@ -26,7 +28,7 @@ public sealed class Railgun : Spell
         damageExpr,
         new Dictionary<string, float> {
             { "power", owner.spellPower },
-            { "wave", GetCurrentWave() }
+            { "wave",  GetCurrentWave()    }
         },
         50f);
 
@@ -34,14 +36,14 @@ public sealed class Railgun : Spell
         speedExpr,
         new Dictionary<string, float> {
             { "power", owner.spellPower },
-            { "wave", GetCurrentWave() }
+            { "wave",  GetCurrentWave()    }
         },
         25f);
 
     protected override float BaseMana => baseMana;
     protected override float BaseCooldown => baseCooldown;
 
-    float GetCurrentWave()
+    private float GetCurrentWave()
     {
         var spawner = Object.FindFirstObjectByType<EnemySpawner>();
         return spawner != null ? spawner.currentWave : 1;
@@ -55,22 +57,47 @@ public sealed class Railgun : Spell
 
         damageExpr = j["damage"]["amount"].Value<string>();
         speedExpr = j["projectile"]["speed"].Value<string>();
-        baseMana = RPNEvaluator.SafeEvaluateFloat(j["mana_cost"].Value<string>(), vars, 10f);
-        baseCooldown = RPNEvaluator.SafeEvaluateFloat(j["cooldown"].Value<string>(), vars, 3f);
+        baseMana = RPNEvaluator.SafeEvaluateFloat(
+                               j["mana_cost"].Value<string>(),
+                               vars,
+                               10f);
+        baseCooldown = RPNEvaluator.SafeEvaluateFloat(
+                               j["cooldown"].Value<string>(),
+                               vars,
+                               3f);
 
         trajectory = j["projectile"]["trajectory"].Value<string>();
         projectileSprite = j["projectile"]["sprite"]?.Value<int>() ?? 0;
+        lifetimeExpr = j["projectile"]["lifetime"]?.Value<string>() ?? "1";
     }
 
     protected override IEnumerator Cast(Vector3 from, Vector3 to)
     {
-        // Capture final damage & speed
+        // 1) Capture final damage, speed, and lifetime
         float dmg = Damage;
         float spd = Speed;
-        Debug.Log($"[{displayName}] Casting ▶ dmg={dmg:F1}, spd={spd:F1}, cooldown={Cooldown:F1}");
+        float lifetime = RPNEvaluator.SafeEvaluateFloat(
+            lifetimeExpr,
+            new Dictionary<string, float> {
+                { "power", owner.spellPower },
+                { "wave",  GetCurrentWave()    }
+            },
+            1f
+        );
+
+        Debug.Log(
+            $"[{displayName}] Casting ▶ dmg={dmg:F1}, spd={spd:F1}, " +
+            $"lifetime={lifetime:F1}, cooldown={Cooldown:F1}"
+        );
 
         Vector3 direction = (to - from).normalized;
 
+        // 2) Snapshot existing projectiles
+        var before = Object.FindObjectsByType<ProjectileController>(
+            FindObjectsSortMode.None
+        ).ToList();
+
+        // 3) Fire a piercing shot
         GameManager.Instance.projectileManager.CreatePiercingProjectile(
             projectileSprite,
             trajectory,
@@ -86,7 +113,17 @@ public sealed class Railgun : Spell
                     hit.Damage(dmgObj);
                     Debug.Log($"[{displayName}] Hit {hit.owner.name} for {amount} dmg");
                 }
-            });
+            }
+        );
+
+        // 4) Apply lifetime to the new projectile
+        var after = Object.FindObjectsByType<ProjectileController>(
+            FindObjectsSortMode.None
+        );
+        foreach (var ctrl in after.Except(before))
+        {
+            ctrl.SetLifetime(lifetime);
+        }
 
         yield return null;
     }

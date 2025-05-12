@@ -47,7 +47,7 @@
        "damage": { "amount": "20 power 2 * +" , "type": "arcane" },
        "mana_cost": "10",
        "cooldown": "10",
-       "projectile": { "trajectory": "straight", "speed": "40", "sprite": 1,  "lifetime": "1" }
+       "projectile": { "trajectory": "straight", "speed": "40", "sprite": 1,  "lifetime": "2" }
    },
    "damage_amp": {
        "name": "damage-amplified",

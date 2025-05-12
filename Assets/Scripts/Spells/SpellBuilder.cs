@@ -63,17 +63,17 @@ public class SpellBuilder
         // wave 1: always a plain ArcaneBolt
         if (wave <= 1)
         {
-            Spell Railgun = new Railgun(owner);
-            if (catalog.TryGetValue("railgun", out var baseJson))
-                Railgun.LoadAttributes(baseJson, vars);
+            Spell spray = new ArcaneSpray(owner);
+            if (catalog.TryGetValue("arcane_spray", out var baseJson))
+                spray.LoadAttributes(baseJson, vars);
 
-            Railgun = new HomingModifier(Railgun);
-            if (catalog.TryGetValue("homing", out var homingJson))
-                Railgun.LoadAttributes(homingJson, vars);
+            spray = new BounceModifier(spray);
+            if (catalog.TryGetValue("bounce", out var bounceJson))
+                spray.LoadAttributes(bounceJson, vars);
 
 
             Debug.Log("[SpellBuilder] Wave 1 forced spell: ArcaneSpray + KnockbackModifier");
-            return Railgun;
+            return spray;
         }
 
         // Ensure true randomness with a new seed based on current time
