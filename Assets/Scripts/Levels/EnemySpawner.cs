@@ -18,6 +18,7 @@ public class EnemySpawner : MonoBehaviour
     private bool isEndless => currentLevel != null && currentLevel.waves <= 0;
 
     private bool waveInProgress = false;
+    private ChooseClassManager classManager;
 
     private void TriggerWin()
     {
@@ -25,6 +26,16 @@ public class EnemySpawner : MonoBehaviour
         GameManager.Instance.IsPlayerDead = false;
         GameManager.Instance.state = GameManager.GameState.GAMEOVER;
         Debug.Log(" You Win: all waves completed.");
+    }
+
+    void Awake()
+    {
+        // Find the ChooseClassManager
+        classManager = FindObjectOfType<ChooseClassManager>();
+        if (classManager == null)
+        {
+            Debug.LogWarning("EnemySpawner: No ChooseClassManager found in scene!");
+        }
     }
 
     void Start()
@@ -56,10 +67,16 @@ public class EnemySpawner : MonoBehaviour
 
         currentWave = 1;
 
-        // Initialize player stats for wave 1
+        // Initialize player
         var playerController = GameManager.Instance.player.GetComponent<PlayerController>();
-        playerController.StartLevel(); // Initialize components and UI
-        ScalePlayerForWave(currentWave); // Set initial stats using RPN
+        if (playerController != null)
+        {
+            playerController.StartLevel();
+        }
+        else
+        {
+            Debug.LogError("StartLevel: Could not find PlayerController on player.");
+        }
 
         StartCoroutine(SpawnWave());
     }
@@ -76,8 +93,8 @@ public class EnemySpawner : MonoBehaviour
         if (waveInProgress) yield break;
         waveInProgress = true;
 
-        // 1) Scale player
-        ScalePlayerForWave(currentWave);
+        // Scale player stats - do this safely
+        SafeScalePlayerForWave(currentWave);
 
         // 2) Countdown
         GameManager.Instance.state = GameManager.GameState.COUNTDOWN;
@@ -116,7 +133,37 @@ public class EnemySpawner : MonoBehaviour
         waveInProgress = false;
     }
 
+    // A wrapper that ensures we never crash during player scaling
+    private void SafeScalePlayerForWave(int wave)
+    {
+        try
+        {
+            // Get the player controller
+            if (GameManager.Instance == null || GameManager.Instance.player == null)
+            {
+                Debug.LogError("SafeScalePlayerForWave: GameManager.Instance.player is null!");
+                return;
+            }
 
+            var pc = GameManager.Instance.player.GetComponent<PlayerController>();
+            if (pc == null)
+            {
+                Debug.LogError("SafeScalePlayerForWave: PlayerController not found!");
+                return;
+            }
+
+            // Initialize components
+            pc.InitializeComponents();
+
+            // Now call the regular method
+            ScalePlayerForWave(wave);
+        }
+        catch (System.Exception e)
+        {
+            // Log but don't crash
+            Debug.LogError($"Error in SafeScalePlayerForWave: {e.Message}\n{e.StackTrace}");
+        }
+    }
 
     IEnumerator SpawnEnemies(Spawn spawn, System.Action<int> onSpawnComplete = null)
     {
@@ -209,38 +256,56 @@ public class EnemySpawner : MonoBehaviour
     {
         Debug.Log($"[EnemySpawner] ScalePlayerForWave({wave})");
 
-        var v = new Dictionary<string, float> { { "wave", wave } };
-        float rHP = RPNEvaluator.EvaluateFloat("95 wave 5 * +", v);
-        float rMana = RPNEvaluator.EvaluateFloat("90 wave 10 * +", v);
-        float rRe = RPNEvaluator.EvaluateFloat("10 wave +", v);
-        float rPow = RPNEvaluator.EvaluateFloat("wave 10 *", v);
-        float rSpd = RPNEvaluator.EvaluateFloat("5", v);
-
+        // Get the player controller
         var pc = GameManager.Instance.player.GetComponent<PlayerController>();
-        if (pc == null)
+        if (pc == null || pc.hp == null || pc.spellcaster == null)
         {
-            Debug.LogError("ScalePlayerForWave: no PlayerController!");
+            Debug.LogError("ScalePlayerForWave: Player controller or its components are null!");
             return;
         }
 
-        // Update HP, preserving health percentage
-        int newMaxHP = Mathf.RoundToInt(rHP);
-        pc.hp.SetMaxHP(newMaxHP, true);
+        // Get the selected class
+        string className = ChooseClassManager.SelectedClass ?? "mage";
+        Debug.Log($"[EnemySpawner] Using class: {className}");
 
-        // Update mana and regen
-        pc.spellcaster.max_mana = Mathf.RoundToInt(rMana);
+        // Get class stats from ChooseClassManager
+        Dictionary<string, float> classStats;
+        if (classManager != null)
+        {
+            classStats = classManager.GetClassStatsForWave(className, wave);
+            Debug.Log($"[EnemySpawner] Got class stats from ChooseClassManager: {string.Join(", ", classStats.Select(kv => $"{kv.Key}={kv.Value}"))}");
+        }
+        else
+        {
+            // Fallback to default stats if ChooseClassManager not available
+            Debug.LogWarning("ScalePlayerForWave: No ChooseClassManager available, using default stats");
+            var v = new Dictionary<string, float> { { "wave", wave } };
+            classStats = new Dictionary<string, float>
+            {
+                { "health", RPNEvaluator.SafeEvaluateFloat("95 wave 5 * +", v) },
+                { "mana", RPNEvaluator.SafeEvaluateFloat("90 wave 10 * +", v) },
+                { "mana_regeneration", RPNEvaluator.SafeEvaluateFloat("10 wave +", v) },
+                { "spellpower", RPNEvaluator.SafeEvaluateFloat("wave 10 *", v) },
+                { "speed", RPNEvaluator.SafeEvaluateFloat("5", v) }
+            };
+        }
+
+        // Apply stats
+        pc.hp.SetMaxHP(Mathf.RoundToInt(classStats["health"]), true);
+        pc.spellcaster.max_mana = Mathf.RoundToInt(classStats["mana"]);
         pc.spellcaster.mana = pc.spellcaster.max_mana;
-        pc.spellcaster.mana_reg = Mathf.RoundToInt(rRe);
+        pc.spellcaster.mana_reg = Mathf.RoundToInt(classStats["mana_regeneration"]);
+        pc.spellcaster.spellPower = Mathf.RoundToInt(classStats["spellpower"]);
+        pc.speed = Mathf.RoundToInt(classStats["speed"]);
 
-        // Update spell power and speed
-        pc.spellcaster.spellPower = Mathf.RoundToInt(rPow);
-        pc.speed = Mathf.RoundToInt(rSpd);
+        // Update UI
+        if (pc.healthui != null)
+            pc.healthui.SetHealth(pc.hp);
 
-        // Refresh UI
-        pc.healthui.SetHealth(pc.hp);
-        pc.manaui.SetSpellCaster(pc.spellcaster);
+        if (pc.manaui != null)
+            pc.manaui.SetSpellCaster(pc.spellcaster);
 
-        Debug.Log($" → PlayerStats: HP={pc.hp.hp}/{pc.hp.max_hp}, Mana={rMana:F1}, Regen={rRe:F1}, " +
-                  $"Power={rPow:F1}, Speed={rSpd:F1}");
+        Debug.Log($" → PlayerStats ({className}): HP={pc.hp.hp}/{pc.hp.max_hp}, Mana={classStats["mana"]:F1}, " +
+                  $"Regen={classStats["mana_regeneration"]:F1}, Power={classStats["spellpower"]:F1}, Speed={classStats["speed"]:F1}");
     }
 }

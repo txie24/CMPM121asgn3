@@ -15,10 +15,23 @@ public class MenuSelectorController : MonoBehaviour
 
     public void StartLevel()
     {
-        if (spawner != null)
+        // Find the class manager
+        ChooseClassManager classManager = Object.FindFirstObjectByType<ChooseClassManager>();
+
+        if (classManager != null)
         {
-            Debug.Log("Start: " + level);
-            spawner.StartLevel(level);
+            // Show class selection UI instead of starting level directly
+            Debug.Log("Start: " + level + " (showing class selection first)");
+            classManager.ShowClassSelection(level, spawner);
+        }
+        else
+        {
+            // Original behavior if class manager is not found
+            if (spawner != null)
+            {
+                Debug.Log("Start: " + level);
+                spawner.StartLevel(level);
+            }
         }
     }
 }
