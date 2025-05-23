@@ -710,6 +710,16 @@ MonoBehaviour:
   manaValueText: {fileID: 1766127717}
   acceptSpellButton: {fileID: 1509761963}
   nextWaveButton: {fileID: 284566018}
+  relicPanel: {fileID: 1202924358}
+  relicIcon1: {fileID: 0}
+  relicIcon2: {fileID: 0}
+  relicIcon3: {fileID: 0}
+  relicName1: {fileID: 0}
+  relicName2: {fileID: 0}
+  relicName3: {fileID: 0}
+  relicButton1: {fileID: 0}
+  relicButton2: {fileID: 0}
+  relicButton3: {fileID: 0}
 --- !u!4 &220180078
 Transform:
   m_ObjectHideFlags: 0
@@ -1133,6 +1143,7 @@ MonoBehaviour:
   mageButton: {fileID: 1800808583}
   warlockButton: {fileID: 1782755754}
   battlemageButton: {fileID: 1862359697}
+  classDescriptionText: {fileID: 0}
 --- !u!1 &279594428
 GameObject:
   m_ObjectHideFlags: 0
@@ -8167,6 +8178,16 @@ MonoBehaviour:
   manaValueText: {fileID: 0}
   acceptSpellButton: {fileID: 0}
   nextWaveButton: {fileID: 284566018}
+  relicPanel: {fileID: 0}
+  relicIcon1: {fileID: 0}
+  relicIcon2: {fileID: 0}
+  relicIcon3: {fileID: 0}
+  relicName1: {fileID: 0}
+  relicName2: {fileID: 0}
+  relicName3: {fileID: 0}
+  relicButton1: {fileID: 0}
+  relicButton2: {fileID: 0}
+  relicButton3: {fileID: 0}
 --- !u!1 &1718273950
 GameObject:
   m_ObjectHideFlags: 0
@@ -59577,6 +59598,16 @@ MonoBehaviour:
   manaValueText: {fileID: 0}
   acceptSpellButton: {fileID: 0}
   nextWaveButton: {fileID: 1782755754}
+  relicPanel: {fileID: 0}
+  relicIcon1: {fileID: 0}
+  relicIcon2: {fileID: 0}
+  relicIcon3: {fileID: 0}
+  relicName1: {fileID: 0}
+  relicName2: {fileID: 0}
+  relicName3: {fileID: 0}
+  relicButton1: {fileID: 0}
+  relicButton2: {fileID: 0}
+  relicButton3: {fileID: 0}
 --- !u!114 &1894875731
 MonoBehaviour:
   m_ObjectHideFlags: 0
