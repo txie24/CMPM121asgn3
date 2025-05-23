@@ -1,6 +1,4 @@
-﻿// File: Assets/Scripts/UI/RewardScreenManager.cs
-
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
@@ -10,6 +8,9 @@ using Newtonsoft.Json;
 
 public class RewardScreenManager : MonoBehaviour
 {
+    // ←— singleton
+    public static RewardScreenManager Instance { get; private set; }
+
     [Header("UI Elements")]
     public GameObject rewardUI;
     public TextMeshProUGUI titleText;
@@ -28,6 +29,19 @@ public class RewardScreenManager : MonoBehaviour
     public Button acceptSpellButton;
     public Button nextWaveButton;
 
+    [Header("Relic Reward UI")]
+    [Tooltip("Parent panel containing the 3 relic slots")]
+    public GameObject relicPanel;
+    public Image relicIcon1;
+    public Image relicIcon2;
+    public Image relicIcon3;
+    public TextMeshProUGUI relicName1;
+    public TextMeshProUGUI relicName2;
+    public TextMeshProUGUI relicName3;
+    public Button relicButton1;
+    public Button relicButton2;
+    public Button relicButton3;
+
     private EnemySpawner spawner;
     private SpellCaster playerSpellCaster;
     private GameManager.GameState prevState;
@@ -35,12 +49,19 @@ public class RewardScreenManager : MonoBehaviour
     private Spell offeredSpell;
     private Dictionary<string, JObject> spellCatalog;
 
+    void Awake()
+    {
+        Instance = this;
+    }
+
     void Start()
     {
         spawner = Object.FindFirstObjectByType<EnemySpawner>();
-        if (rewardUI != null) rewardUI.SetActive(false);
-        if (acceptSpellButton != null) acceptSpellButton.onClick.AddListener(AcceptSpell);
-        if (nextWaveButton != null) nextWaveButton.onClick.AddListener(OnNextWaveClicked);
+        rewardUI?.SetActive(false);
+        relicPanel?.SetActive(false);
+
+        acceptSpellButton?.onClick.AddListener(AcceptSpell);
+        nextWaveButton?.onClick.AddListener(OnNextWaveClicked);
 
         prevState = GameManager.Instance.state;
 
@@ -57,7 +78,6 @@ public class RewardScreenManager : MonoBehaviour
         var state = GameManager.Instance.state;
         if (state == prevState) return;
 
-        // show reward screen on every WAVEEND (including endless)
         if (state == GameManager.GameState.WAVEEND)
         {
             if (rewardCoroutine != null) StopCoroutine(rewardCoroutine);
@@ -65,7 +85,7 @@ public class RewardScreenManager : MonoBehaviour
         }
         else
         {
-            if (rewardUI != null) rewardUI.SetActive(false);
+            rewardUI?.SetActive(false);
         }
 
         prevState = state;
@@ -75,21 +95,27 @@ public class RewardScreenManager : MonoBehaviour
     {
         yield return new WaitForSeconds(0.25f);
 
-        if (titleText != null) titleText.text = "You Survived!";
-        if (currentWaveText != null) currentWaveText.text = $"Current Wave: {spawner.currentWave - 1}";
-        if (nextWaveText != null) nextWaveText.text = $"Next Wave: {spawner.currentWave}";
-        if (enemiesKilledText != null) enemiesKilledText.text = $"Enemies Killed: {spawner.lastWaveEnemyCount}";
+        // update header texts
+        titleText?.SetText("You Survived!");
+        currentWaveText?.SetText($"Current Wave: {spawner.currentWave - 1}");
+        nextWaveText?.SetText($"Next Wave: {spawner.currentWave}");
+        enemiesKilledText?.SetText($"Enemies Killed: {spawner.lastWaveEnemyCount}");
 
+        // Always show spell reward as before
         GenerateSpellReward();
+        spellIcon?.gameObject.SetActive(true);
+        acceptSpellButton.interactable = true;
+        nextWaveButton.interactable = true;
 
-        if (rewardUI != null) rewardUI.SetActive(true);
-        if (acceptSpellButton != null) acceptSpellButton.interactable = true;
-        if (nextWaveButton != null) nextWaveButton.interactable = true;
+        // hide relic UI by default
+        relicPanel?.SetActive(false);
+
+        // show the whole panel
+        rewardUI?.SetActive(true);
     }
 
     void GenerateSpellReward()
     {
-        // cache player SpellCaster
         if (playerSpellCaster == null && GameManager.Instance.player != null)
             playerSpellCaster = GameManager.Instance.player.GetComponent<SpellCaster>();
 
@@ -99,7 +125,6 @@ public class RewardScreenManager : MonoBehaviour
             return;
         }
 
-        // build random spell
         var builder = new SpellBuilder();
         offeredSpell = builder.Build(playerSpellCaster);
 
@@ -114,14 +139,12 @@ public class RewardScreenManager : MonoBehaviour
         if (spellIcon != null && GameManager.Instance.spellIconManager != null)
             GameManager.Instance.spellIconManager.PlaceSprite(spell.IconIndex, spellIcon);
 
-        if (spellNameText != null)
-            spellNameText.text = spell.DisplayName;
+        spellNameText?.SetText(spell.DisplayName);
 
-        // description: modifiers first, then base spell
+        // description
         if (spellDescriptionText != null && spellCatalog != null)
         {
             var lines = new List<string>();
-            // collect modifier wrappers
             var cursor = spell;
             var mods = new List<ModifierSpell>();
             while (cursor is ModifierSpell m)
@@ -129,40 +152,20 @@ public class RewardScreenManager : MonoBehaviour
                 mods.Add(m);
                 cursor = m.InnerSpell;
             }
-            // for each modifier, pull its JSON description
             foreach (var m in mods)
             {
-                var parts = m.DisplayName.Split(' ');
-                var suffix = parts[^1]; // last word
-                foreach (var kv in spellCatalog)
-                {
-                    var j = kv.Value;
-                    if (j["name"]?.Value<string>() == suffix)
-                    {
-                        lines.Add($"{suffix}: {j["description"].Value<string>()}");
-                        break;
-                    }
-                }
+                var suffix = m.DisplayName.Split(' ')[^1];
+                if (spellCatalog.TryGetValue(suffix, out var j))
+                    lines.Add($"{suffix}: {j["description"].Value<string>()}");
             }
-            // then the base spell
             var baseName = cursor.DisplayName;
-            foreach (var kv in spellCatalog)
-            {
-                var j = kv.Value;
-                if (j["name"]?.Value<string>() == baseName)
-                {
-                    lines.Add($"{baseName}: {j["description"].Value<string>()}");
-                    break;
-                }
-            }
-            spellDescriptionText.text = string.Join("\n", lines);
+            if (spellCatalog.TryGetValue(baseName, out var jb))
+                lines.Add($"{baseName}: {jb["description"].Value<string>()}");
+            spellDescriptionText?.SetText(string.Join("\n", lines));
         }
 
-        // damage & mana
-        if (damageValueText != null)
-            damageValueText.text = Mathf.RoundToInt(spell.Damage).ToString();
-        if (manaValueText != null)
-            manaValueText.text = Mathf.RoundToInt(spell.Mana).ToString();
+        damageValueText?.SetText(Mathf.RoundToInt(spell.Damage).ToString());
+        manaValueText?.SetText(Mathf.RoundToInt(spell.Mana).ToString());
     }
 
     void AcceptSpell()
@@ -192,7 +195,7 @@ public class RewardScreenManager : MonoBehaviour
             return;
         }
 
-        // find an empty slot (max 4)
+        // find empty slot
         int slot = -1;
         for (int i = 0; i < 4; i++)
         {
@@ -212,29 +215,76 @@ public class RewardScreenManager : MonoBehaviour
             return;
         }
 
-        // assign directly into the list
         playerSpellCaster.spells[slot] = offeredSpell;
         Debug.Log($"Added '{offeredSpell.DisplayName}' to slot {slot}.");
 
-        // refresh UI & proceed
         UpdatePlayerSpellUI();
         OnNextWaveClicked();
     }
 
     void UpdatePlayerSpellUI()
     {
-        var container = Object.FindFirstObjectByType<SpellUIContainer>();
-        if (container != null)
-            container.UpdateSpellUIs();
-        else if (GameManager.Instance.player != null)
-            GameManager.Instance.player.GetComponent<PlayerController>()?.UpdateSpellUI();
+        var pc = GameManager.Instance.player.GetComponent<PlayerController>();
+        pc?.UpdateSpellUI();
     }
 
     void OnNextWaveClicked()
     {
-        if (rewardUI != null) rewardUI.SetActive(false);
-        if (acceptSpellButton != null) acceptSpellButton.interactable = false;
-        if (nextWaveButton != null) nextWaveButton.interactable = false;
+        rewardUI?.SetActive(false);
+        relicPanel?.SetActive(false);
+        acceptSpellButton.interactable = false;
+        nextWaveButton.interactable = false;
         spawner?.NextWave();
+    }
+
+    /// <summary>
+    /// Called by RelicManager when it’s time to show relics.
+    /// Hook this up in RelicManager: 
+    ///     RewardScreenManager.Instance.ShowRelics(choices);
+    /// </summary>
+    public void ShowRelics(Relic[] relics)
+    {
+        // hide spell reward
+        spellIcon?.gameObject.SetActive(false);
+        acceptSpellButton.interactable = false;
+
+        // show relic panel
+        relicPanel.SetActive(true);
+        rewardUI.SetActive(true);
+
+        // slot 1
+        SetupRelicSlot(relicIcon1, relicName1, relicButton1, relics, 0);
+        SetupRelicSlot(relicIcon2, relicName2, relicButton2, relics, 1);
+        SetupRelicSlot(relicIcon3, relicName3, relicButton3, relics, 2);
+
+        // disable Next until pick
+        nextWaveButton.interactable = false;
+    }
+
+    void SetupRelicSlot(
+      Image icon, TextMeshProUGUI nameText, Button button,
+      Relic[] relics, int idx)
+    {
+        if (idx < relics.Length)
+        {
+            var r = relics[idx];
+            icon.gameObject.SetActive(true);
+            nameText.text = r.Name;
+            // assume you have a sprite manager for relics
+            GameManager.Instance.relicIconManager?.PlaceSprite(r.SpriteIndex, icon);
+
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() =>
+            {
+                RelicManager.I.PickRelic(r);
+                OnNextWaveClicked();
+            });
+            button.interactable = true;
+        }
+        else
+        {
+            icon.gameObject.SetActive(false);
+            button.gameObject.SetActive(false);
+        }
     }
 }

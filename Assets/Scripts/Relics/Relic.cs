@@ -1,37 +1,22 @@
-using UnityEngine;
+Ôªøusing UnityEngine;
 
 public class Relic
 {
     public string Name { get; }
     public int SpriteIndex { get; }
 
-    IRelicTrigger trigger;
-    IRelicEffect effect;
+    readonly IRelicTrigger trigger;
+    readonly IRelicEffect effect;
 
-    public Relic(RelicData data)
+    public Relic(RelicData d)
     {
-        Name = data.name;
-        SpriteIndex = data.sprite;
-        trigger = RelicTriggers.Create(data.trigger, this);
-        effect = RelicEffects.Create(data.effect, this);
+        Name = d.name;      // ‚Üê‚Äî use name, not type
+        SpriteIndex = d.sprite;
+        trigger = RelicTriggers.Create(d.trigger, this);
+        effect = RelicEffects.Create(d.effect, this);
     }
 
-    /// <summary>Called once when the player picks this relic.</summary>
-    public void Init()
-    {
-        trigger.Subscribe();
-    }
-
-    /// <summary>Called by triggers to fire effect.</summary>
-    public void Fire()
-    {
-        effect.Activate();
-    }
-
-    /// <summary>Called by triggers to end ìuntilî effects.</summary>
-    public void End()
-    {
-        effect.Deactivate();
-        trigger.Unsubscribe();
-    }
+    public void Init() => trigger.Subscribe();
+    public void Fire() => effect.Activate();
+    public void End() => effect.Deactivate();
 }

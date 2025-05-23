@@ -7,6 +7,8 @@ using System.Linq;
 
 public class EnemySpawner : MonoBehaviour
 {
+    public static event Action<int> OnWaveEnd;
+    public static event Action<GameObject> OnEnemyKilled;
     public Image level_selector;
     public GameObject button;
     public GameObject enemy;
@@ -30,12 +32,9 @@ public class EnemySpawner : MonoBehaviour
 
     void Awake()
     {
-        // Find the ChooseClassManager
-        classManager = FindObjectOfType<ChooseClassManager>();
+        classManager = FindFirstObjectByType<ChooseClassManager>();
         if (classManager == null)
-        {
             Debug.LogWarning("EnemySpawner: No ChooseClassManager found in scene!");
-        }
     }
 
     void Start()

@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 [System.Serializable]
-public class RelicDataList
-{
-    public RelicData[] relics;
-}
+public class RelicDataList { public RelicData[] relics; }
 
 [System.Serializable]
 public class RelicData
@@ -18,27 +15,16 @@ public class RelicData
 }
 
 [System.Serializable]
-public class TriggerData
-{
-    public string type;
-    public string amount;
-    public string until;
-}
-
+public class TriggerData { public string type, amount, until; }
 [System.Serializable]
-public class EffectData
-{
-    public string type;
-    public string amount;
-    public string until;
-}
+public class EffectData { public string type, amount, until; }
 
 public class RelicManager : MonoBehaviour
 {
     public static RelicManager I { get; private set; }
 
     List<Relic> allRelics;
-    List<Relic> ownedRelics = new List<Relic>();
+    List<Relic> owned = new List<Relic>();
 
     void Awake()
     {
@@ -54,35 +40,31 @@ public class RelicManager : MonoBehaviour
         var txt = Resources.Load<TextAsset>("relics");
         if (txt == null)
         {
-            Debug.LogError("Could not find relics.json in Resources/");
+            Debug.LogError("Could not find relics.json");
             return;
         }
-
         var list = JsonUtility.FromJson<RelicDataList>(txt.text);
         allRelics = list.relics.Select(d => new Relic(d)).ToList();
     }
 
-    void OnWaveEnd(int waveNumber)
+    void OnWaveEnd(int wave)
     {
-        if (waveNumber % 3 != 0) return;
+        if (wave % 3 != 0) return;
 
         var choices = allRelics
-            .Except(ownedRelics)
-            .OrderBy(_ => Random.value)
+            .Except(owned)
+            .OrderBy(_ => UnityEngine.Random.value)
             .Take(3)
             .ToArray();
 
         if (choices.Length > 0)
-            RewardScreenManager.I.ShowRelics(choices);
+            RewardScreenManager.Instance.ShowRelics(choices);
     }
 
-    /// <summary>
-    /// Call this from your UI when player picks one of the shown relics.
-    /// </summary>
-    public void PickRelic(Relic relic)
+    public void PickRelic(Relic r)
     {
-        if (ownedRelics.Contains(relic)) return;
-        ownedRelics.Add(relic);
-        relic.Init();
+        if (owned.Contains(r)) return;
+        owned.Add(r);
+        r.Init();
     }
 }

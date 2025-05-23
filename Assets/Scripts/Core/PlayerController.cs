@@ -1,8 +1,9 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
 {
+    public static event Action<Vector3> OnPlayerMove;
     public Hittable hp;
     public HealthBar healthui;
     public ManaBar manaui;
@@ -144,12 +145,34 @@ public class PlayerController : MonoBehaviour
             GameManager.Instance.state == GameManager.GameState.GAMEOVER)
             return;
 
-        if (unit == null)
-        {
-            unit = GetComponent<Unit>() ?? gameObject.AddComponent<Unit>();
-        }
+        Vector2 mv2 = value.Get<Vector2>() * speed;
+        unit.movement = mv2;
 
-        unit.movement = value.Get<Vector2>() * speed;
+        // ► broadcast the move event:
+        Vector3 mv3 = new Vector3(mv2.x, mv2.y, 0f);
+        OnPlayerMove?.Invoke(mv3);
+    }
+
+    // ► these two methods satisfy the RelicEffects calls:
+
+    /// <summary>
+    /// Directly add mana (clamped to max), and update UI.
+    /// </summary>
+    public void GainMana(int amount)
+    {
+        if (spellcaster == null) InitializeComponents();
+        spellcaster.mana = Mathf.Min(spellcaster.max_mana, spellcaster.mana + amount);
+        if (manaui != null)
+            manaui.SetSpellCaster(spellcaster);
+    }
+
+    /// <summary>
+    /// Permanently bumps up your spell power.
+    /// </summary>
+    public void AddSpellPower(int amount)
+    {
+        if (spellcaster == null) InitializeComponents();
+        spellcaster.spellPower += amount;
     }
 
     void Die()

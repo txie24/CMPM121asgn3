@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public interface IRelicEffect
@@ -9,40 +10,32 @@ public interface IRelicEffect
 
 public static class RelicEffects
 {
-    public static IRelicEffect Create(EffectData data, Relic relic)
+    public static IRelicEffect Create(EffectData d, Relic r) => d.type switch
     {
-        return data.type switch
-        {
-            "gain-mana" => new GainManaEffect(int.Parse(data.amount)),
-            "gain-spellpower" => new GainSpellPowerEffect(data.amount),
-            _ => throw new Exception($"Unknown effect type: {data.type}")
-        };
-    }
+        "gain-mana" => new GainMana(int.Parse(d.amount)),
+        "gain-spellpower" => new GainSpellPower(d.amount),
+        _ => throw new Exception($"Unknown effect {d.type}")
+    };
 
-    class GainManaEffect : IRelicEffect
+    class GainMana : IRelicEffect
     {
-        readonly int amount;
-        public GainManaEffect(int amt) { amount = amt; }
-
+        readonly int amt;
+        public GainMana(int a) { amt = a; }
         public void Activate()
-        {
-            GameManager.Instance.Player.GainMana(amount);
-        }
-
+            => GameManager.Instance.player.GetComponent<PlayerController>().GainMana(amt);
         public void Deactivate() { }
     }
 
-    class GainSpellPowerEffect : IRelicEffect
+    class GainSpellPower : IRelicEffect
     {
         readonly string formula;
-        public GainSpellPowerEffect(string f) { formula = f; }
-
+        public GainSpellPower(string f) { formula = f; }
         public void Activate()
         {
-            int val = RPNEvaluator.Evaluate(formula);
-            GameManager.Instance.Player.AddSpellPower(val);
+            var vars = new Dictionary<string, int> { { "wave", GameManager.Instance.wavesCompleted } };
+            int v = RPNEvaluator.Evaluate(formula, vars);
+            GameManager.Instance.player.GetComponent<PlayerController>().AddSpellPower(v);
         }
-
         public void Deactivate() { }
     }
 }

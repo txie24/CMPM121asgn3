@@ -91,6 +91,8 @@ public class GameManager
     {
         enemies.Remove(enemy);
         totalEnemiesKilled++;
+        EnemySpawner.OnEnemyKilled?.Invoke(enemy);
+
     }
 
     public GameObject GetClosestEnemy(Vector3 point)

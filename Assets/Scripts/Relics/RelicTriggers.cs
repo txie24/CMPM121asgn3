@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using System.Collections;
 
 public interface IRelicTrigger
 {
@@ -10,100 +9,63 @@ public interface IRelicTrigger
 
 public static class RelicTriggers
 {
-    public static IRelicTrigger Create(TriggerData data, Relic relic)
+    public static IRelicTrigger Create(TriggerData d, Relic r) => d.type switch
     {
-        return data.type switch
-        {
-            "take-damage" => new TakeDamageTrigger(relic),
-            "on-kill" => new OnKillTrigger(relic),
-            "stand-still" => new StandStillTrigger(relic, float.Parse(data.amount)),
-            _ => throw new Exception($"Unknown trigger type: {data.type}")
-        };
-    }
+        "take-damage" => new DamageTrigger(r),
+        "on-kill" => new KillTrigger(r),
+        "stand-still" => new StandStillTrigger(r, float.Parse(d.amount)),
+        _ => throw new Exception($"Unknown trigger {d.type}")
+    };
 
-    class TakeDamageTrigger : IRelicTrigger
+    class DamageTrigger : IRelicTrigger
     {
         readonly Relic relic;
-        public TakeDamageTrigger(Relic r) { relic = r; }
-
-        public void Subscribe()
-        {
-            EventBus.Instance.OnDamage += OnDamaged;
-        }
-
-        public void Unsubscribe()
-        {
-            EventBus.Instance.OnDamage -= OnDamaged;
-        }
-
-        void OnDamaged(Vector3 pos, float dmg, GameObject source)
-        {
-            relic.Fire();
-        }
+        public DamageTrigger(Relic r) { relic = r; }
+        public void Subscribe() => EventBus.Instance.OnDamage += (_, __, ___) => relic.Fire();
+        public void Unsubscribe() => EventBus.Instance.OnDamage -= (_, __, ___) => relic.Fire();
     }
 
-    class OnKillTrigger : IRelicTrigger
+    class KillTrigger : IRelicTrigger
     {
         readonly Relic relic;
-        public OnKillTrigger(Relic r) { relic = r; }
-
-        public void Subscribe()
-        {
-            EnemySpawner.OnEnemyKilled += OnKilled;
-        }
-
-        public void Unsubscribe()
-        {
-            EnemySpawner.OnEnemyKilled -= OnKilled;
-        }
-
-        void OnKilled(GameObject killedEnemy)
-        {
-            relic.Fire();
-        }
+        public KillTrigger(Relic r) { relic = r; }
+        public void Subscribe() => EnemySpawner.OnEnemyKilled += OnKilled;
+        public void Unsubscribe() => EnemySpawner.OnEnemyKilled -= OnKilled;
+        void OnKilled(GameObject _) => relic.Fire();
     }
 
     class StandStillTrigger : IRelicTrigger
     {
         readonly Relic relic;
-        readonly float delay;
-        bool isWaiting;
+        readonly float secs;
+        bool waiting;
 
-        public StandStillTrigger(Relic r, float secs)
-        {
-            relic = r;
-            delay = secs;
-        }
+        public StandStillTrigger(Relic r, float s) { relic = r; secs = s; }
 
         public void Subscribe()
         {
-            PlayerController.OnStopped += OnStopped;
-            PlayerController.OnMoved += OnMoved;
+            PlayerController.OnPlayerMove += OnMove;
+            CoroutineManager.Instance.Run(Check());
         }
-
         public void Unsubscribe()
+            => PlayerController.OnPlayerMove -= OnMove;
+
+        void OnMove(Vector3 mv)
         {
-            PlayerController.OnStopped -= OnStopped;
-            PlayerController.OnMoved -= OnMoved;
+            if (mv.sqrMagnitude <= 0.001f && !waiting)
+                CoroutineManager.Instance.Run(Check());
+            else if (mv.sqrMagnitude > 0.001f && waiting)
+            {
+                waiting = false;
+                relic.End();
+            }
         }
 
-        void OnStopped()
+        System.Collections.IEnumerator Check()
         {
-            if (!isWaiting)
-                CoroutineManager.Instance.Run(WaitAndFire());
-        }
-
-        IEnumerator WaitAndFire()
-        {
-            isWaiting = true;
-            yield return new WaitForSeconds(delay);
-            relic.Fire();
-        }
-
-        void OnMoved()
-        {
-            isWaiting = false;
-            relic.End();
+            waiting = true;
+            yield return new WaitForSeconds(secs);
+            if (waiting) relic.Fire();
         }
     }
 }
