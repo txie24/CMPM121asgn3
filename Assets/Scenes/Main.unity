@@ -500,7 +500,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 260, y: -164}
+  m_AnchoredPosition: {x: 371, y: -164}
   m_SizeDelta: {x: 273.6024, y: 59.5856}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &66133320
@@ -921,16 +921,16 @@ MonoBehaviour:
   manaValueText: {fileID: 1766127717}
   acceptSpellButton: {fileID: 1509761963}
   nextWaveButton: {fileID: 284566018}
-  relicPanel: {fileID: 1202924358}
-  relicIcon1: {fileID: 0}
-  relicIcon2: {fileID: 0}
-  relicIcon3: {fileID: 0}
-  relicName1: {fileID: 0}
-  relicName2: {fileID: 0}
-  relicName3: {fileID: 0}
-  relicButton1: {fileID: 0}
-  relicButton2: {fileID: 0}
-  relicButton3: {fileID: 0}
+  relicPanel: {fileID: 1197470991}
+  relicIcon1: {fileID: 952477961}
+  relicIcon2: {fileID: 1152144248}
+  relicIcon3: {fileID: 140204145}
+  relicName1: {fileID: 14187377}
+  relicName2: {fileID: 1760949927}
+  relicName3: {fileID: 316572035}
+  relicButton1: {fileID: 1016190698}
+  relicButton2: {fileID: 977226159}
+  relicButton3: {fileID: 2110286981}
 --- !u!4 &220180078
 Transform:
   m_ObjectHideFlags: 0
@@ -1602,7 +1602,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -11.8, y: -253.7}
+  m_AnchoredPosition: {x: -11.8, y: -246}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &284566018
@@ -3017,7 +3017,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 259, y: -110}
+  m_AnchoredPosition: {x: 370, y: -110}
   m_SizeDelta: {x: 272.92, y: 59.5856}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &469916830
@@ -3928,7 +3928,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -157, y: -1}
+  m_AnchoredPosition: {x: -85, y: -1}
   m_SizeDelta: {x: 28.8822, y: 16.7271}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &631347677
@@ -5266,7 +5266,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 260, y: -58}
+  m_AnchoredPosition: {x: 371, y: -58}
   m_SizeDelta: {x: 273.6023, y: 59.5856}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &909840849
@@ -6965,7 +6965,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 70.57391, y: -1}
+  m_AnchoredPosition: {x: 142.57391, y: -1}
   m_SizeDelta: {x: 28.8822, y: 16.7271}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1080697072
@@ -8139,7 +8139,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -9, y: 14.999996}
+  m_AnchoredPosition: {x: -9, y: 33}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1509761963
@@ -9147,7 +9147,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 291.10236, y: -1}
+  m_AnchoredPosition: {x: 363.10236, y: -1}
   m_SizeDelta: {x: 28.8822, y: 16.7271}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1645862290
@@ -9629,15 +9629,15 @@ MonoBehaviour:
   acceptSpellButton: {fileID: 0}
   nextWaveButton: {fileID: 284566018}
   relicPanel: {fileID: 1197470991}
-  relicIcon1: {fileID: 952477961}
-  relicIcon2: {fileID: 1152144248}
-  relicIcon3: {fileID: 140204145}
-  relicName1: {fileID: 14187377}
-  relicName2: {fileID: 1760949927}
-  relicName3: {fileID: 316572035}
-  relicButton1: {fileID: 1016190698}
-  relicButton2: {fileID: 977226159}
-  relicButton3: {fileID: 2110286981}
+  relicIcon1: {fileID: 0}
+  relicIcon2: {fileID: 0}
+  relicIcon3: {fileID: 0}
+  relicName1: {fileID: 0}
+  relicName2: {fileID: 0}
+  relicName3: {fileID: 0}
+  relicButton1: {fileID: 0}
+  relicButton2: {fileID: 0}
+  relicButton3: {fileID: 0}
 --- !u!1 &1718273950
 GameObject:
   m_ObjectHideFlags: 0

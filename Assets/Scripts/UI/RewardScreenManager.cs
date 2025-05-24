@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿// File: Assets/Scripts/UI/RewardScreenManager.cs
+
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
@@ -8,7 +10,7 @@ using Newtonsoft.Json;
 
 public class RewardScreenManager : MonoBehaviour
 {
-    // ←— singleton
+    // singleton
     public static RewardScreenManager Instance { get; private set; }
 
     [Header("UI Elements")]
@@ -101,7 +103,7 @@ public class RewardScreenManager : MonoBehaviour
         nextWaveText?.SetText($"Next Wave: {spawner.currentWave}");
         enemiesKilledText?.SetText($"Enemies Killed: {spawner.lastWaveEnemyCount}");
 
-        // Always show spell reward as before
+        // Always show spell reward
         GenerateSpellReward();
         spellIcon?.gameObject.SetActive(true);
         acceptSpellButton.interactable = true;
@@ -141,10 +143,11 @@ public class RewardScreenManager : MonoBehaviour
 
         spellNameText?.SetText(spell.DisplayName);
 
-        // description
+        // description: modifiers first, then base spell
         if (spellDescriptionText != null && spellCatalog != null)
         {
             var lines = new List<string>();
+            // peel off any ModifierSpell wrappers
             var cursor = spell;
             var mods = new List<ModifierSpell>();
             while (cursor is ModifierSpell m)
@@ -152,16 +155,35 @@ public class RewardScreenManager : MonoBehaviour
                 mods.Add(m);
                 cursor = m.InnerSpell;
             }
+
+            // for each modifier, look up its JSON "name" field
             foreach (var m in mods)
             {
-                var suffix = m.DisplayName.Split(' ')[^1];
-                if (spellCatalog.TryGetValue(suffix, out var j))
-                    lines.Add($"{suffix}: {j["description"].Value<string>()}");
+                var suffix = m.DisplayName.Split(' ')[^1]; // last word
+                foreach (var kv in spellCatalog)
+                {
+                    var j = kv.Value;
+                    if (j["name"]?.Value<string>() == suffix)
+                    {
+                        lines.Add($"{suffix}: {j["description"].Value<string>()}");
+                        break;
+                    }
+                }
             }
+
+            // finally the base spell
             var baseName = cursor.DisplayName;
-            if (spellCatalog.TryGetValue(baseName, out var jb))
-                lines.Add($"{baseName}: {jb["description"].Value<string>()}");
-            spellDescriptionText?.SetText(string.Join("\n", lines));
+            foreach (var kv in spellCatalog)
+            {
+                var j = kv.Value;
+                if (j["name"]?.Value<string>() == baseName)
+                {
+                    lines.Add($"{baseName}: {j["description"].Value<string>()}");
+                    break;
+                }
+            }
+
+            spellDescriptionText.SetText(string.Join("\n", lines));
         }
 
         damageValueText?.SetText(Mathf.RoundToInt(spell.Damage).ToString());
@@ -224,7 +246,7 @@ public class RewardScreenManager : MonoBehaviour
 
     void UpdatePlayerSpellUI()
     {
-        var pc = GameManager.Instance.player.GetComponent<PlayerController>();
+        var pc = GameManager.Instance.player?.GetComponent<PlayerController>();
         pc?.UpdateSpellUI();
     }
 
@@ -239,8 +261,6 @@ public class RewardScreenManager : MonoBehaviour
 
     /// <summary>
     /// Called by RelicManager when it’s time to show relics.
-    /// Hook this up in RelicManager: 
-    ///     RewardScreenManager.Instance.ShowRelics(choices);
     /// </summary>
     public void ShowRelics(Relic[] relics)
     {
@@ -262,15 +282,14 @@ public class RewardScreenManager : MonoBehaviour
     }
 
     void SetupRelicSlot(
-      Image icon, TextMeshProUGUI nameText, Button button,
-      Relic[] relics, int idx)
+        Image icon, TextMeshProUGUI nameText, Button button,
+        Relic[] relics, int idx)
     {
         if (idx < relics.Length)
         {
             var r = relics[idx];
             icon.gameObject.SetActive(true);
             nameText.text = r.Name;
-            // assume you have a sprite manager for relics
             GameManager.Instance.relicIconManager?.PlaceSprite(r.SpriteIndex, icon);
 
             button.onClick.RemoveAllListeners();
