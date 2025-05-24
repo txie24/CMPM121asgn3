@@ -33,6 +33,7 @@ public class RelicManager : MonoBehaviour
 
         LoadRelics();
         EnemySpawner.OnWaveEnd += OnWaveEnd;
+        Debug.Log("RelicManager initialized and subscribed to OnWaveEnd");
     }
 
     void LoadRelics()
@@ -43,13 +44,24 @@ public class RelicManager : MonoBehaviour
             Debug.LogError("Could not find relics.json");
             return;
         }
-        var list = JsonUtility.FromJson<RelicDataList>(txt.text);
+
+        // Fix: relics.json is an array, so wrap it in an object
+        var list = JsonUtility.FromJson<RelicDataList>("{\"relics\":" + txt.text + "}");
         allRelics = list.relics.Select(d => new Relic(d)).ToList();
+        Debug.Log($"RelicManager loaded {allRelics.Count} relics");
     }
 
     void OnWaveEnd(int wave)
     {
-        if (wave % 3 != 0) return;
+        Debug.Log($"OnWaveEnd triggered for wave {wave}");
+
+        if (wave % 3 != 0)
+        {
+            Debug.Log($"Wave {wave} is not a relic wave");
+            return;
+        }
+
+        Debug.Log($"Wave {wave} IS a relic wave! Showing relics...");
 
         var choices = allRelics
             .Except(owned)
@@ -57,8 +69,20 @@ public class RelicManager : MonoBehaviour
             .Take(3)
             .ToArray();
 
+        Debug.Log($"Selected {choices.Length} relic choices");
+
         if (choices.Length > 0)
-            RewardScreenManager.Instance.ShowRelics(choices);
+        {
+            if (RewardScreenManager.Instance != null)
+            {
+                Debug.Log("Calling ShowRelics");
+                RewardScreenManager.Instance.ShowRelics(choices);
+            }
+            else
+            {
+                Debug.LogError("RewardScreenManager.Instance is NULL!");
+            }
+        }
     }
 
     public void PickRelic(Relic r)
@@ -66,5 +90,17 @@ public class RelicManager : MonoBehaviour
         if (owned.Contains(r)) return;
         owned.Add(r);
         r.Init();
+        Debug.Log($"Picked relic: {r.Name}");
+    }
+
+    [ContextMenu("Force Show Relics")]
+    public void ForceShowRelics()
+    {
+        if (allRelics != null && allRelics.Count > 0)
+        {
+            var choices = allRelics.Take(3).ToArray();
+            Debug.Log($"Force showing {choices.Length} relics");
+            RewardScreenManager.Instance?.ShowRelics(choices);
+        }
     }
 }

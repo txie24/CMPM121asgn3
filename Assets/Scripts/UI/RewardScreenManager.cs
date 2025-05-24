@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
@@ -50,9 +51,13 @@ public class RewardScreenManager : MonoBehaviour
     private Coroutine rewardCoroutine;
     private Spell offeredSpell;
     private Dictionary<string, JObject> spellCatalog;
+    private List<Relic> ownedRelics = new List<Relic>();
 
     void Start()
     {
+        // Initialize singleton
+        Instance = this;
+
         spawner = Object.FindFirstObjectByType<EnemySpawner>();
         if (rewardUI != null) rewardUI.SetActive(false);
         if (acceptSpellButton != null) acceptSpellButton.onClick.AddListener(AcceptSpell);
@@ -91,16 +96,90 @@ public class RewardScreenManager : MonoBehaviour
     {
         yield return new WaitForSeconds(0.25f);
 
+        // ALWAYS reset UI to show spell first
+        ResetUIToSpellMode();
+
         if (titleText != null) titleText.text = "You Survived!";
         if (currentWaveText != null) currentWaveText.text = $"Current Wave: {spawner.currentWave - 1}";
         if (nextWaveText != null) nextWaveText.text = $"Next Wave: {spawner.currentWave}";
         if (enemiesKilledText != null) enemiesKilledText.text = $"Enemies Killed: {spawner.lastWaveEnemyCount}";
 
+        // ALWAYS generate and show spell reward first
         GenerateSpellReward();
 
+        // CHECK IF THIS IS A RELIC WAVE (every 3rd wave: 3, 6, 9, etc.)
+        int completedWave = spawner.currentWave - 1; // Wave we just completed
+        if (completedWave % 3 == 0 && completedWave > 0)
+        {
+            Debug.Log($"Wave {completedWave} is a relic wave! Showing relics alongside spell.");
+            ShowRelicReward();
+        }
+
         if (rewardUI != null) rewardUI.SetActive(true);
-        if (acceptSpellButton != null) acceptSpellButton.interactable = true;
-        if (nextWaveButton != null) nextWaveButton.interactable = true;
+    }
+
+    void ResetUIToSpellMode()
+    {
+        // Show spell UI elements
+        if (spellIcon != null) spellIcon.gameObject.SetActive(true);
+        if (spellNameText != null) spellNameText.gameObject.SetActive(true);
+        if (spellDescriptionText != null) spellDescriptionText.gameObject.SetActive(true);
+        if (damageValueText != null) damageValueText.gameObject.SetActive(true);
+        if (manaValueText != null) manaValueText.gameObject.SetActive(true);
+        if (acceptSpellButton != null)
+        {
+            acceptSpellButton.gameObject.SetActive(true);
+            acceptSpellButton.interactable = true;
+        }
+        if (nextWaveButton != null)
+        {
+            nextWaveButton.gameObject.SetActive(true);
+            nextWaveButton.interactable = true;
+        }
+
+        // Hide relic UI
+        if (relicPanel != null) relicPanel.SetActive(false);
+    }
+
+    void ShowRelicReward()
+    {
+        // Load and show relics ALONGSIDE the spell
+        var relicsText = Resources.Load<TextAsset>("relics");
+        if (relicsText == null)
+        {
+            Debug.LogError("No relics.json found, only showing spell");
+            return;
+        }
+
+        try
+        {
+            // Parse relics
+            var list = JsonUtility.FromJson<RelicDataList>("{\"relics\":" + relicsText.text + "}");
+            var allRelics = new List<Relic>();
+
+            foreach (var relicData in list.relics)
+            {
+                allRelics.Add(new Relic(relicData));
+            }
+
+            // Get relics not already owned
+            var availableRelics = allRelics.Where(r => !ownedRelics.Any(owned => owned.Name == r.Name)).ToList();
+
+            if (availableRelics.Count == 0)
+            {
+                Debug.Log("All relics already owned, only showing spell");
+                return;
+            }
+
+            // Pick 3 random available relics
+            var choices = availableRelics.OrderBy(_ => UnityEngine.Random.value).Take(3).ToArray();
+
+            ShowRelics(choices);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Failed to load relics: {e.Message}");
+        }
     }
 
     void GenerateSpellReward()
@@ -251,49 +330,84 @@ public class RewardScreenManager : MonoBehaviour
         if (rewardUI != null) rewardUI.SetActive(false);
         if (acceptSpellButton != null) acceptSpellButton.interactable = false;
         if (nextWaveButton != null) nextWaveButton.interactable = false;
+        if (relicPanel != null) relicPanel.SetActive(false);
         spawner?.NextWave();
     }
-    // — relic stuff below —
 
+    // — relic stuff below —
     public void ShowRelics(Relic[] relics)
     {
-        // hide spell UI
-        spellIcon?.gameObject.SetActive(false);
-        acceptSpellButton.interactable = false;
+        // DON'T hide spell UI - show relics ALONGSIDE spell
+        // Change title to indicate both rewards
+        if (titleText != null) titleText.text = "You Survived! Choose a Spell and a Relic!";
 
-        relicPanel.SetActive(true);
-        rewardUI.SetActive(true);
+        // Show relic UI panel
+        if (relicPanel != null) relicPanel.SetActive(true);
 
         SetupRelicSlot(relicIcon1, relicName1, relicButton1, relics, 0);
         SetupRelicSlot(relicIcon2, relicName2, relicButton2, relics, 1);
         SetupRelicSlot(relicIcon3, relicName3, relicButton3, relics, 2);
 
-        nextWaveButton.interactable = false;
+        // Don't disable next wave button - let player proceed after choosing spell/relic
     }
 
-    void SetupRelicSlot(
-        Image icon, TextMeshProUGUI nameText, Button button,
-        Relic[] relics, int idx)
+    void SetupRelicSlot(Image icon, TextMeshProUGUI nameText, Button button, Relic[] relics, int idx)
     {
         if (idx < relics.Length)
         {
             var r = relics[idx];
-            icon.gameObject.SetActive(true);
-            nameText.text = r.Name;
-            GameManager.Instance.relicIconManager?.PlaceSprite(r.SpriteIndex, icon);
 
-            button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(() =>
+            if (icon != null)
             {
-                RelicManager.I.PickRelic(r);
-                OnNextWaveClicked();
-            });
-            button.interactable = true;
+                icon.gameObject.SetActive(true);
+                if (GameManager.Instance.relicIconManager != null)
+                {
+                    GameManager.Instance.relicIconManager.PlaceSprite(r.SpriteIndex, icon);
+                }
+            }
+
+            if (nameText != null)
+            {
+                nameText.gameObject.SetActive(true);
+                nameText.text = r.Name;
+            }
+
+            if (button != null)
+            {
+                button.gameObject.SetActive(true);
+                button.onClick.RemoveAllListeners();
+                button.onClick.AddListener(() =>
+                {
+                    PickRelic(r);
+                    HideRelicPanel(); // Hide relic selection after picking
+                });
+                button.interactable = true;
+            }
         }
         else
         {
-            icon.gameObject.SetActive(false);
-            button.gameObject.SetActive(false);
+            if (icon != null) icon.gameObject.SetActive(false);
+            if (nameText != null) nameText.gameObject.SetActive(false);
+            if (button != null) button.gameObject.SetActive(false);
         }
+    }
+
+    void PickRelic(Relic relic)
+    {
+        if (ownedRelics.Any(r => r.Name == relic.Name))
+        {
+            Debug.LogWarning($"Relic {relic.Name} already owned");
+            return;
+        }
+
+        ownedRelics.Add(relic);
+        relic.Init();
+        Debug.Log($"Picked relic: {relic.Name}");
+    }
+
+    void HideRelicPanel()
+    {
+        if (relicPanel != null) relicPanel.SetActive(false);
+        if (titleText != null) titleText.text = "You Survived!";
     }
 }
