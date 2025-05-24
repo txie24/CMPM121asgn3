@@ -9628,16 +9628,16 @@ MonoBehaviour:
   manaValueText: {fileID: 0}
   acceptSpellButton: {fileID: 0}
   nextWaveButton: {fileID: 284566018}
-  relicPanel: {fileID: 0}
-  relicIcon1: {fileID: 0}
-  relicIcon2: {fileID: 0}
-  relicIcon3: {fileID: 0}
-  relicName1: {fileID: 0}
-  relicName2: {fileID: 0}
-  relicName3: {fileID: 0}
-  relicButton1: {fileID: 0}
-  relicButton2: {fileID: 0}
-  relicButton3: {fileID: 0}
+  relicPanel: {fileID: 1197470991}
+  relicIcon1: {fileID: 952477961}
+  relicIcon2: {fileID: 1152144248}
+  relicIcon3: {fileID: 140204145}
+  relicName1: {fileID: 14187377}
+  relicName2: {fileID: 1760949927}
+  relicName3: {fileID: 316572035}
+  relicButton1: {fileID: 1016190698}
+  relicButton2: {fileID: 977226159}
+  relicButton3: {fileID: 2110286981}
 --- !u!1 &1718273950
 GameObject:
   m_ObjectHideFlags: 0
