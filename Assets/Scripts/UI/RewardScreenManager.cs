@@ -113,18 +113,16 @@ public class RewardScreenManager : MonoBehaviour
         acceptSpellButton.interactable = true;
         nextWaveButton.interactable = true;
 
-        // by default hide relic panel
+        // hide relic panel to reset
         relicPanel?.SetActive(false);
 
-        // check for relic wave
-        int completedWave = spawner.currentWave - 1;
-        if (completedWave > 0 && completedWave % 3 == 0)
-        {
-            ShowRelicReward();
-        }
+        // FOR TESTING: always show relics on every wave
+        ShowRelicReward();
 
+        // finally, show the full UI
         rewardUI?.SetActive(true);
     }
+
 
     void GenerateSpellReward()
     {
