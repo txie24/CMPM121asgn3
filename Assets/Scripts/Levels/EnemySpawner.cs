@@ -73,14 +73,24 @@ public class EnemySpawner : MonoBehaviour
         string cls = ChooseClassManager.SelectedClass ?? "mage";
         int idx = PlayerClass.GetSpriteIndex(cls);
         Debug.Log($"[EnemySpawner] sprite idx={idx} for class='{cls}'");
-        var sr = GameManager.Instance.player
-                                 .GetComponent<SpriteRenderer>();
-        if (sr == null)
-            Debug.LogError("StartLevel: no SpriteRenderer on player");
+
+        // **explicitly find your child named "player sprite"**
+        var spriteGO = GameManager.Instance.player
+                            .transform.Find("player sprite");
+        if (spriteGO == null)
+        {
+            Debug.LogError("StartLevel: could not find child named 'player sprite'");
+        }
         else
-            sr.sprite = GameManager.Instance
-                             .playerSpriteManager
-                             .Get(idx);
+        {
+            var sr = spriteGO.GetComponent<SpriteRenderer>();
+            if (sr == null)
+                Debug.LogError("StartLevel: 'player sprite' has no SpriteRenderer");
+            else
+                sr.sprite = GameManager.Instance
+                              .playerSpriteManager
+                              .Get(idx);
+        }
 
         // begin spawning
         StartCoroutine(SpawnWave());
@@ -189,9 +199,17 @@ public class EnemySpawner : MonoBehaviour
 
         var ivars = new Dictionary<string, int> { ["base"] = def.hp, ["wave"] = currentWave };
         int total = RPNEvaluator.SafeEvaluate(spawn.count, ivars, 0);
-        int hp = spawn.hp != null ? RPNEvaluator.SafeEvaluate(spawn.hp, ivars, def.hp) : def.hp;
-        float spd = spawn.speed != null ? RPNEvaluator.SafeEvaluate(spawn.speed, new Dictionary<string, int> { { "base", (int)def.speed }, { "wave", currentWave } }, (int)def.speed) : def.speed;
-        float delay = spawn.delay != null ? RPNEvaluator.SafeEvaluate(spawn.delay, ivars, 2) : 2f;
+        int hp = spawn.hp != null
+                      ? RPNEvaluator.SafeEvaluate(spawn.hp, ivars, def.hp)
+                      : def.hp;
+        float spd = spawn.speed != null
+                      ? RPNEvaluator.SafeEvaluate(spawn.speed,
+                          new Dictionary<string, int> { { "base", (int)def.speed }, { "wave", currentWave } },
+                          (int)def.speed)
+                      : def.speed;
+        float delay = spawn.delay != null
+                      ? RPNEvaluator.SafeEvaluate(spawn.delay, ivars, 2)
+                      : 2f;
 
         spd = Mathf.Clamp(spd, 1f, 20f);
         var seq = (spawn.sequence != null && spawn.sequence.Count > 0)
@@ -205,7 +223,7 @@ public class EnemySpawner : MonoBehaviour
             for (int i = 0; i < batch && spawned < total; i++)
             {
                 var pt = PickSpawnPoint(spawn.location);
-                var ofs = UnityEngine.Random.insideUnitCircle * 3f;  // fully qualified now
+                var ofs = UnityEngine.Random.insideUnitCircle * 3f;
                 var go = Instantiate(enemy, pt.transform.position + (Vector3)ofs, Quaternion.identity);
 
                 // set enemy sprite
@@ -233,7 +251,9 @@ public class EnemySpawner : MonoBehaviour
             return SpawnPoints[UnityEngine.Random.Range(0, SpawnPoints.Length)];
 
         var kind = loc.Split(' ')[1].ToUpperInvariant();
-        var list = SpawnPoints.Where(sp => sp.kind.ToString().ToUpperInvariant() == kind).ToList();
+        var list = SpawnPoints
+            .Where(sp => sp.kind.ToString().ToUpperInvariant() == kind)
+            .ToList();
         return list.Count > 0
             ? SpawnPoints[UnityEngine.Random.Range(0, list.Count)]
             : SpawnPoints[UnityEngine.Random.Range(0, SpawnPoints.Length)];
