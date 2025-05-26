@@ -45,6 +45,12 @@ public class RewardScreenManager : MonoBehaviour
     public Button relicButton2;
     public Button relicButton3;
 
+    [Header("Feedback Text (replaces buttons)")]
+    public TextMeshProUGUI spellAcquiredText;
+    public TextMeshProUGUI relicTakenText1;
+    public TextMeshProUGUI relicTakenText2;
+    public TextMeshProUGUI relicTakenText3;
+
     private EnemySpawner spawner;
     private SpellCaster playerSpellCaster;
     private GameManager.GameState prevState;
@@ -71,7 +77,6 @@ public class RewardScreenManager : MonoBehaviour
 
         prevState = GameManager.Instance.state;
 
-        // load spells.json
         var ta = Resources.Load<TextAsset>("spells");
         if (ta != null)
             spellCatalog = JsonConvert.DeserializeObject<Dictionary<string, JObject>>(ta.text);
@@ -101,6 +106,13 @@ public class RewardScreenManager : MonoBehaviour
     {
         yield return new WaitForSeconds(0.25f);
 
+        // reset feedback texts & buttons
+        spellAcquiredText?.gameObject.SetActive(false);
+        acceptSpellButton?.gameObject.SetActive(true);
+        relicTakenText1?.gameObject.SetActive(false);
+        relicTakenText2?.gameObject.SetActive(false);
+        relicTakenText3?.gameObject.SetActive(false);
+
         // header
         titleText?.SetText("You Survived!");
         currentWaveText?.SetText($"Current Wave: {spawner.currentWave - 1}");
@@ -123,7 +135,6 @@ public class RewardScreenManager : MonoBehaviour
         rewardUI?.SetActive(true);
     }
 
-
     void GenerateSpellReward()
     {
         if (playerSpellCaster == null && GameManager.Instance.player != null)
@@ -143,11 +154,9 @@ public class RewardScreenManager : MonoBehaviour
     {
         if (spell == null) return;
 
-        // icon & name
         GameManager.Instance.spellIconManager?.PlaceSprite(spell.IconIndex, spellIcon);
         spellNameText?.SetText(spell.DisplayName);
 
-        // description: modifiers first, then base spell
         if (spellDescriptionText != null && spellCatalog != null)
         {
             var lines = new List<string>();
@@ -199,7 +208,6 @@ public class RewardScreenManager : MonoBehaviour
             return;
         }
 
-        // check for duplicate
         bool duplicate = false;
         for (int i = 0; i < playerSpellCaster.spells.Count; i++)
         {
@@ -216,7 +224,6 @@ public class RewardScreenManager : MonoBehaviour
             return;
         }
 
-        // find empty slot
         int slot = -1;
         for (int i = 0; i < 4; i++)
         {
@@ -235,10 +242,11 @@ public class RewardScreenManager : MonoBehaviour
         }
 
         playerSpellCaster.spells[slot] = offeredSpell;
-        Debug.Log($"Added '{offeredSpell.DisplayName}' to slot {slot}.");
-
         UpdatePlayerSpellUI();
-        OnNextWaveClicked();
+
+        // show feedback instead of next-wave
+        acceptSpellButton.gameObject.SetActive(false);
+        spellAcquiredText?.gameObject.SetActive(true);
     }
 
     void UpdatePlayerSpellUI()
@@ -259,7 +267,7 @@ public class RewardScreenManager : MonoBehaviour
         spawner?.NextWave();
     }
 
-    // — relic stuff below (unchanged) —
+    // — relic stuff below (unchanged loading logic) —
 
     void ShowRelicReward()
     {
@@ -287,8 +295,7 @@ public class RewardScreenManager : MonoBehaviour
 
     public void ShowRelics(Relic[] relics)
     {
-        if (titleText != null)
-            titleText.text = "You Survived! Choose a Spell and a Relic!";
+        titleText?.SetText("You Survived! Choose a Spell and a Relic!");
         relicPanel?.SetActive(true);
 
         SetupRelicSlot(relicIcon1, relicName1, relicButton1, relics, 0);
@@ -298,23 +305,41 @@ public class RewardScreenManager : MonoBehaviour
 
     void SetupRelicSlot(Image icon, TextMeshProUGUI nameText, Button button, Relic[] relics, int idx)
     {
+        // hide any old "taken" text
+        switch (idx)
+        {
+            case 0: relicTakenText1?.gameObject.SetActive(false); break;
+            case 1: relicTakenText2?.gameObject.SetActive(false); break;
+            case 2: relicTakenText3?.gameObject.SetActive(false); break;
+        }
+
         if (idx < relics.Length)
         {
             var r = relics[idx];
             icon?.gameObject.SetActive(true);
-            if (GameManager.Instance.relicIconManager != null)
-                GameManager.Instance.relicIconManager.PlaceSprite(r.SpriteIndex, icon);
+            GameManager.Instance.relicIconManager?.PlaceSprite(r.SpriteIndex, icon);
 
             nameText?.gameObject.SetActive(true);
             nameText.text = r.Name;
 
             button?.gameObject.SetActive(true);
             button.onClick.RemoveAllListeners();
+
+            int localIdx = idx;
+            Relic localRelic = r;
             button.onClick.AddListener(() =>
             {
-                PickRelic(r);
-                HideRelicPanel();
+                PickRelic(localRelic);
+                HideOtherRelicSlots(localIdx);
+                button.gameObject.SetActive(false);
+                switch (localIdx)
+                {
+                    case 0: relicTakenText1?.gameObject.SetActive(true); break;
+                    case 1: relicTakenText2?.gameObject.SetActive(true); break;
+                    case 2: relicTakenText3?.gameObject.SetActive(true); break;
+                }
             });
+
             button.interactable = true;
         }
         else
@@ -334,12 +359,33 @@ public class RewardScreenManager : MonoBehaviour
         }
         ownedRelics.Add(relic);
         relic.Init();
-        Debug.Log($"Picked relic: {relic.Name}");
     }
 
-    void HideRelicPanel()
+    /// <summary>
+    /// After picking one relic, hide the other two slots completely.
+    /// </summary>
+    private void HideOtherRelicSlots(int selectedIdx)
     {
-        relicPanel?.SetActive(false);
-        titleText?.SetText("You Survived!");
+        if (selectedIdx != 0)
+        {
+            relicIcon1.gameObject.SetActive(false);
+            relicName1.gameObject.SetActive(false);
+            relicButton1.gameObject.SetActive(false);
+            relicTakenText1.gameObject.SetActive(false);
+        }
+        if (selectedIdx != 1)
+        {
+            relicIcon2.gameObject.SetActive(false);
+            relicName2.gameObject.SetActive(false);
+            relicButton2.gameObject.SetActive(false);
+            relicTakenText2.gameObject.SetActive(false);
+        }
+        if (selectedIdx != 2)
+        {
+            relicIcon3.gameObject.SetActive(false);
+            relicName3.gameObject.SetActive(false);
+            relicButton3.gameObject.SetActive(false);
+            relicTakenText3.gameObject.SetActive(false);
+        }
     }
 }
