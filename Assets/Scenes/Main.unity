@@ -1349,7 +1349,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34917cf4d5f92ff48a26e454244fedfd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  classSelectionUI: {fileID: 0}
+  classSelectionUI: {fileID: 1894875728}
   mageButton: {fileID: 1800808583}
   warlockButton: {fileID: 1782755754}
   battlemageButton: {fileID: 1862359697}
@@ -10901,7 +10901,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: New Text
+  m_text: Choose Your Class
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
