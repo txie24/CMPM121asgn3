@@ -106,24 +106,22 @@ public class RewardScreenManager : MonoBehaviour
     {
         yield return new WaitForSeconds(0.25f);
 
-        // Get the wave we just completed
         int completedWave = spawner.currentWave - 1;
-        Debug.Log($"RewardScreenManager: Completed wave {completedWave}");
 
-        // reset feedback texts & buttons
+        // reset feedback texts & buttons…
         spellAcquiredText?.gameObject.SetActive(false);
         acceptSpellButton?.gameObject.SetActive(true);
         relicTakenText1?.gameObject.SetActive(false);
         relicTakenText2?.gameObject.SetActive(false);
         relicTakenText3?.gameObject.SetActive(false);
 
-        // header
+        // header…
         titleText?.SetText("You Survived!");
         currentWaveText?.SetText($"Current Wave: {completedWave}");
         nextWaveText?.SetText($"Next Wave: {spawner.currentWave}");
         enemiesKilledText?.SetText($"Enemies Killed: {spawner.lastWaveEnemyCount}");
 
-        // spell reward
+        // spell reward…
         GenerateSpellReward();
         spellIcon?.gameObject.SetActive(true);
         acceptSpellButton.interactable = true;
@@ -132,18 +130,13 @@ public class RewardScreenManager : MonoBehaviour
         // hide relic panel to reset
         relicPanel?.SetActive(false);
 
-        // Check if this is a relic wave (every 3rd wave starting from wave 3)
-        bool isRelicWave = completedWave >= 3 && completedWave % 3 == 0;
-        Debug.Log($"RewardScreenManager: Wave {completedWave}, isRelicWave = {isRelicWave}");
-
-        if (isRelicWave)
-        {
-            ShowRelicReward();
-        }
+        // **always** offer relics
+        ShowRelicReward();
 
         // finally, show the full UI
         rewardUI?.SetActive(true);
     }
+
 
     void GenerateSpellReward()
     {
