@@ -1,3 +1,5 @@
+﻿// Assets/Scripts/UI/RelicUI.cs
+
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
@@ -5,12 +7,14 @@ using System.Collections.Generic;
 public class RelicUI : MonoBehaviour
 {
     [Header("Required References")]
-    public GameObject relicSlotPrefab; // Drag RelicSlot prefab here
-    public Transform contentParent;    // Drag Content object here
+    [Tooltip("Your RelicSlot prefab must have a child GameObject named 'Icon' with an Image on it.")]
+    public GameObject relicSlotPrefab;
+    [Tooltip("Drag in the 'Content' RectTransform under RelicUI (the HLayoutGroup).")]
+    public Transform contentParent;
 
-    // Internal tracking
-    private List<GameObject> activeRelicSlots = new List<GameObject>();
-    private List<string> displayedRelicNames = new List<string>();
+    // internal bookkeeping
+    private List<GameObject> activeIcons = new List<GameObject>();
+    private List<string> displayedRelicIDs = new List<string>();
 
     public static RelicUI Instance { get; private set; }
 
@@ -18,240 +22,106 @@ public class RelicUI : MonoBehaviour
     {
         Instance = this;
 
-        // Auto-find content parent if not assigned
         if (contentParent == null)
         {
-            contentParent = transform.Find("Content");
-            if (contentParent == null)
-            {
-                Debug.LogError("RelicUI: Could not find 'Content' child object!");
-            }
+            var t = transform.Find("Content");
+            if (t != null)
+                contentParent = t;
+            else
+                Debug.LogError("RelicUI: Couldn't find a child named 'Content'!");
         }
-
-        Debug.Log("RelicUI: Initialized");
     }
 
     void Start()
     {
-        // Start with empty display
         ClearAllRelics();
     }
 
     /// <summary>
-    /// Add a new relic icon to the top bar
+    /// Call this to add a relic to the bar.
     /// </summary>
     public void AddRelic(Relic relic)
     {
         if (relic == null)
         {
-            Debug.LogError("RelicUI: Attempted to add null relic");
+            Debug.LogError("RelicUI: AddRelic was passed null");
             return;
         }
-
-        // Check if already displayed
-        if (displayedRelicNames.Contains(relic.Name))
+        if (displayedRelicIDs.Contains(relic.Name))
         {
-            Debug.LogWarning($"RelicUI: Relic '{relic.Name}' already displayed");
+            Debug.LogWarning($"RelicUI: '{relic.Name}' is already on the bar");
             return;
         }
-
-        Debug.Log($"RelicUI: Adding relic '{relic.Name}' to top bar");
-        CreateRelicSlot(relic);
+        CreateIconFor(relic);
     }
 
     /// <summary>
-    /// Remove a relic from the display
+    /// Remove a relic by name.
     /// </summary>
     public void RemoveRelic(string relicName)
     {
-        int index = displayedRelicNames.IndexOf(relicName);
-        if (index >= 0 && index < activeRelicSlots.Count)
+        int idx = displayedRelicIDs.IndexOf(relicName);
+        if (idx >= 0 && idx < activeIcons.Count)
         {
-            Debug.Log($"RelicUI: Removing relic '{relicName}' from display");
-
-            if (activeRelicSlots[index] != null)
-            {
-                Destroy(activeRelicSlots[index]);
-            }
-
-            activeRelicSlots.RemoveAt(index);
-            displayedRelicNames.RemoveAt(index);
+            Destroy(activeIcons[idx]);
+            activeIcons.RemoveAt(idx);
+            displayedRelicIDs.RemoveAt(idx);
         }
     }
 
     /// <summary>
-    /// Clear all displayed relics
+    /// Clears the entire bar.
     /// </summary>
     public void ClearAllRelics()
     {
-        foreach (var slot in activeRelicSlots)
-        {
-            if (slot != null)
-            {
-                Destroy(slot);
-            }
-        }
+        foreach (var go in activeIcons)
+            if (go != null)
+                Destroy(go);
 
-        activeRelicSlots.Clear();
-        displayedRelicNames.Clear();
-        Debug.Log("RelicUI: Cleared all relic displays");
+        activeIcons.Clear();
+        displayedRelicIDs.Clear();
     }
 
     /// <summary>
-    /// Create a visual slot for a relic
+    /// Instantiates only the 'Icon' child from your slot prefab and sets its sprite.
     /// </summary>
-    private void CreateRelicSlot(Relic relic)
+    private void CreateIconFor(Relic relic)
     {
-        // Validation
-        if (relicSlotPrefab == null)
+        // 1) find the Icon template inside your prefab
+        var iconTemplate = relicSlotPrefab.transform.Find("Icon");
+        if (iconTemplate == null)
         {
-            Debug.LogError("RelicUI: relicSlotPrefab is not assigned! Drag the RelicSlot prefab to the RelicUI component.");
+            Debug.LogError("RelicUI: relicSlotPrefab is missing a child named 'Icon'");
             return;
         }
 
-        if (contentParent == null)
+        // 2) instantiate just that Icon under your Content
+        GameObject iconGO = Instantiate(iconTemplate.gameObject, contentParent);
+        iconGO.name = $"RelicIcon_{relic.Name}";
+
+        // 3) grab & assign the sprite
+        var img = iconGO.GetComponent<Image>();
+        var mgr = GameManager.Instance?.relicIconManager;
+        Sprite spr = mgr != null ? mgr.Get(relic.SpriteIndex) : null;
+        if (img == null || spr == null)
         {
-            Debug.LogError("RelicUI: contentParent is not assigned! Drag the Content object to the RelicUI component.");
+            Debug.LogError($"RelicUI: couldn't get Image or sprite for '{relic.Name}'");
+            Destroy(iconGO);
             return;
         }
+        img.sprite = spr;
+        img.color = Color.white;
+        img.preserveAspect = true;
 
-        // Create the slot
-        GameObject newSlot = Instantiate(relicSlotPrefab, contentParent);
-        newSlot.name = $"RelicSlot_{relic.Name}";
+        // 4) optional: add a click callback
+        var btn = iconGO.GetComponent<Button>() ?? iconGO.AddComponent<Button>();
+        btn.onClick.RemoveAllListeners();
+        btn.onClick.AddListener(() => Debug.Log($"Clicked relic {relic.Name}"));
 
-        // Find the Image component - based on your prefab structure, it's directly on the root
-        Image iconImage = newSlot.GetComponent<Image>();
+        // 5) track it for removal later
+        activeIcons.Add(iconGO);
+        displayedRelicIDs.Add(relic.Name);
 
-        // If not on root, try to find Icon child
-        if (iconImage == null)
-        {
-            Transform iconTransform = newSlot.transform.Find("Icon");
-            if (iconTransform != null)
-            {
-                iconImage = iconTransform.GetComponent<Image>();
-            }
-        }
-
-        // If still not found, try "icon" (lowercase)
-        if (iconImage == null)
-        {
-            Transform iconTransform = newSlot.transform.Find("icon");
-            if (iconTransform != null)
-            {
-                iconImage = iconTransform.GetComponent<Image>();
-            }
-        }
-
-        if (iconImage == null)
-        {
-            Debug.LogError($"RelicUI: Could not find Image component in RelicSlot prefab! Make sure your prefab has an Image component.");
-            return;
-        }
-
-        Debug.Log($"RelicUI: Found Image component for relic '{relic.Name}'. Attempting to set sprite index {relic.SpriteIndex}");
-
-        // Set the relic sprite
-        if (GameManager.Instance == null)
-        {
-            Debug.LogError("RelicUI: GameManager.Instance is null!");
-            iconImage.color = Color.red;
-            return;
-        }
-
-        if (GameManager.Instance.relicIconManager == null)
-        {
-            Debug.LogError("RelicUI: GameManager.Instance.relicIconManager is null!");
-            iconImage.color = Color.red;
-            return;
-        }
-
-        try
-        {
-            // Get the sprite directly to verify it exists
-            Sprite relicSprite = GameManager.Instance.relicIconManager.Get(relic.SpriteIndex);
-            if (relicSprite == null)
-            {
-                Debug.LogError($"RelicUI: Sprite at index {relic.SpriteIndex} is null! Check your RelicIconManager sprite array.");
-                iconImage.color = Color.red;
-                return;
-            }
-
-            // Assign the sprite directly
-            iconImage.sprite = relicSprite;
-            iconImage.color = Color.white; // Make sure it's visible
-
-            Debug.Log($"RelicUI: Successfully set sprite '{relicSprite.name}' for relic '{relic.Name}'");
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"RelicUI: Failed to set sprite for relic '{relic.Name}': {e.Message}");
-            iconImage.color = Color.red; // Make it red so you know it failed
-        }
-
-        // Optional: Add click handler for tooltip
-        Button button = newSlot.GetComponent<Button>();
-        if (button == null)
-        {
-            button = newSlot.AddComponent<Button>();
-        }
-        button.onClick.RemoveAllListeners();
-        button.onClick.AddListener(() => Debug.Log($"Clicked relic: {relic.Name}"));
-
-        // Track this slot
-        activeRelicSlots.Add(newSlot);
-        displayedRelicNames.Add(relic.Name);
-
-        Debug.Log($"RelicUI: Successfully created slot for relic '{relic.Name}'. Total relics displayed: {activeRelicSlots.Count}");
-    }
-
-    /// <summary>
-    /// Get count of displayed relics
-    /// </summary>
-    public int GetRelicCount()
-    {
-        return activeRelicSlots.Count;
-    }
-
-    // Debug method - call this to test
-    [ContextMenu("Test Add Fake Relic")]
-    public void TestAddFakeRelic()
-    {
-        // Create a fake relic for testing
-        var fakeRelicData = new RelicData
-        {
-            name = "Test Relic",
-            sprite = 0,
-            trigger = new TriggerData { type = "test" },
-            effect = new EffectData { type = "test" }
-        };
-        var fakeRelic = new Relic(fakeRelicData);
-        AddRelic(fakeRelic);
-    }
-
-    [ContextMenu("Debug Sprite Manager")]
-    public void DebugSpriteManager()
-    {
-        Debug.Log("=== SPRITE MANAGER DEBUG ===");
-        if (GameManager.Instance == null)
-        {
-            Debug.LogError("GameManager.Instance is null!");
-            return;
-        }
-
-        if (GameManager.Instance.relicIconManager == null)
-        {
-            Debug.LogError("GameManager.Instance.relicIconManager is null!");
-            return;
-        }
-
-        int spriteCount = GameManager.Instance.relicIconManager.GetCount();
-        Debug.Log($"RelicIconManager has {spriteCount} sprites");
-
-        for (int i = 0; i < spriteCount; i++)
-        {
-            Sprite sprite = GameManager.Instance.relicIconManager.Get(i);
-            Debug.Log($"Sprite {i}: {(sprite != null ? sprite.name : "NULL")}");
-        }
-        Debug.Log("=== END DEBUG ===");
+        Debug.Log($"RelicUI: added '{relic.Name}'");
     }
 }

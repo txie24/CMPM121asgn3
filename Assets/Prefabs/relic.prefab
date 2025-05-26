@@ -377,8 +377,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 364e2459a5b2d4b4eb0183f652d2c3b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  index: 0
-  icon: {fileID: 4117733509820137324}
-  highlight: {fileID: 7307759817737334420}
-  label: {fileID: 8910856457351684552}
+  relicSlotPrefab: {fileID: 0}
+  contentParent: {fileID: 0}
