@@ -1,5 +1,4 @@
 ﻿// File: Assets/Scripts/UI/RewardScreenManager.cs
-
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -41,6 +40,10 @@ public class RewardScreenManager : MonoBehaviour
     public TextMeshProUGUI relicName1;
     public TextMeshProUGUI relicName2;
     public TextMeshProUGUI relicName3;
+    // —— added description fields:
+    public TextMeshProUGUI relicDescription1;
+    public TextMeshProUGUI relicDescription2;
+    public TextMeshProUGUI relicDescription3;
     public Button relicButton1;
     public Button relicButton2;
     public Button relicButton3;
@@ -136,7 +139,6 @@ public class RewardScreenManager : MonoBehaviour
         // finally, show the full UI
         rewardUI?.SetActive(true);
     }
-
 
     void GenerateSpellReward()
     {
@@ -316,12 +318,12 @@ public class RewardScreenManager : MonoBehaviour
         titleText?.SetText("You Survived! Choose a Spell and a Relic!");
         relicPanel?.SetActive(true);
 
-        SetupRelicSlot(relicIcon1, relicName1, relicButton1, relics, 0);
-        SetupRelicSlot(relicIcon2, relicName2, relicButton2, relics, 1);
-        SetupRelicSlot(relicIcon3, relicName3, relicButton3, relics, 2);
+        SetupRelicSlot(relicIcon1, relicName1, relicDescription1, relicButton1, relics, 0);
+        SetupRelicSlot(relicIcon2, relicName2, relicDescription2, relicButton2, relics, 1);
+        SetupRelicSlot(relicIcon3, relicName3, relicDescription3, relicButton3, relics, 2);
     }
 
-    void SetupRelicSlot(Image icon, TextMeshProUGUI nameText, Button button, Relic[] relics, int idx)
+    void SetupRelicSlot(Image icon, TextMeshProUGUI nameText, TextMeshProUGUI descText, Button button, Relic[] relics, int idx)
     {
         // hide any old "taken" text
         switch (idx)
@@ -342,6 +344,12 @@ public class RewardScreenManager : MonoBehaviour
             nameText?.gameObject.SetActive(true);
             nameText.text = r.Name;
 
+            if (descText != null)
+            {
+                descText.gameObject.SetActive(true);
+                descText.SetText($"{r.TriggerData.description}\n{r.EffectData.description}");
+            }
+
             button?.gameObject.SetActive(true);
             button.onClick.RemoveAllListeners();
 
@@ -359,13 +367,13 @@ public class RewardScreenManager : MonoBehaviour
                     case 2: relicTakenText3?.gameObject.SetActive(true); break;
                 }
             });
-
             button.interactable = true;
         }
         else
         {
             icon?.gameObject.SetActive(false);
             nameText?.gameObject.SetActive(false);
+            if (descText != null) descText.gameObject.SetActive(false);
             button?.gameObject.SetActive(false);
         }
     }
@@ -387,7 +395,6 @@ public class RewardScreenManager : MonoBehaviour
         if (RelicUI.Instance != null)
         {
             RelicUI.Instance.AddRelic(relic);
-            Debug.Log($"RewardScreenManager: Added relic '{relic.Name}' to RelicUI display");
         }
         else
         {
@@ -406,6 +413,7 @@ public class RewardScreenManager : MonoBehaviour
         {
             relicIcon1?.gameObject.SetActive(false);
             relicName1?.gameObject.SetActive(false);
+            relicDescription1?.gameObject.SetActive(false);
             relicButton1?.gameObject.SetActive(false);
             relicTakenText1?.gameObject.SetActive(false);
         }
@@ -413,6 +421,7 @@ public class RewardScreenManager : MonoBehaviour
         {
             relicIcon2?.gameObject.SetActive(false);
             relicName2?.gameObject.SetActive(false);
+            relicDescription2?.gameObject.SetActive(false);
             relicButton2?.gameObject.SetActive(false);
             relicTakenText2?.gameObject.SetActive(false);
         }
@@ -420,6 +429,7 @@ public class RewardScreenManager : MonoBehaviour
         {
             relicIcon3?.gameObject.SetActive(false);
             relicName3?.gameObject.SetActive(false);
+            relicDescription3?.gameObject.SetActive(false);
             relicButton3?.gameObject.SetActive(false);
             relicTakenText3?.gameObject.SetActive(false);
         }

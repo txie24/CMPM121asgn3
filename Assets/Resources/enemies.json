@@ -21,17 +21,17 @@
        "damage": 10
    },
    {
-    "name": "goblin",
-    "sprite": 11,
-    "hp": 25,
-    "speed": 6,
-    "damage": 4
-  },
-  {
-    "name": "boss",
-    "sprite": 18,
-    "hp": 300,
-    "speed": 4,
-    "damage": 25
-  }
+        "name": "goblin",
+        "sprite": 11,
+        "hp": 25,
+        "speed": 6,
+        "damage": 4
+   },
+   {
+        "name": "boss",
+        "sprite": 18,
+        "hp": 300,
+        "speed": 4,
+        "damage": 25
+   }
 ]

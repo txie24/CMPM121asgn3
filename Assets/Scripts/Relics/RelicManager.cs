@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 
 [System.Serializable]
-public class RelicDataList { public RelicData[] relics; }
+public class RelicDataList
+{
+    public RelicData[] relics;
+}
 
 [System.Serializable]
 public class RelicData
@@ -15,9 +18,22 @@ public class RelicData
 }
 
 [System.Serializable]
-public class TriggerData { public string type, amount, until; }
+public class TriggerData
+{
+    public string description;
+    public string type;
+    public string amount;
+    public string until;
+}
+
 [System.Serializable]
-public class EffectData { public string type, amount, until; }
+public class EffectData
+{
+    public string description;
+    public string type;
+    public string amount;
+    public string until;
+}
 
 public class RelicManager : MonoBehaviour
 {
@@ -28,8 +44,16 @@ public class RelicManager : MonoBehaviour
 
     void Awake()
     {
-        if (I == null) { I = this; DontDestroyOnLoad(gameObject); }
-        else { Destroy(gameObject); return; }
+        if (I == null)
+        {
+            I = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
 
         LoadRelics();
         EnemySpawner.OnWaveEnd += OnWaveEnd;
@@ -45,7 +69,7 @@ public class RelicManager : MonoBehaviour
             return;
         }
 
-        // Fix: relics.json is an array, so wrap it in an object
+        // relics.json is an array, so wrap it in an object
         var list = JsonUtility.FromJson<RelicDataList>("{\"relics\":" + txt.text + "}");
         allRelics = list.relics.Select(d => new Relic(d)).ToList();
         Debug.Log($"RelicManager loaded {allRelics.Count} relics");
@@ -61,27 +85,22 @@ public class RelicManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"Wave {wave} IS a relic wave! Showing relics...");
-
-        var choices = allRelics
-            .Except(owned)
-            .OrderBy(_ => UnityEngine.Random.value)
-            .Take(3)
-            .ToArray();
-
-        Debug.Log($"Selected {choices.Length} relic choices");
-
-        if (choices.Length > 0)
+        var available = allRelics.Where(r => !owned.Contains(r)).ToList();
+        if (available.Count < 3)
         {
-            if (RewardScreenManager.Instance != null)
-            {
-                Debug.Log("Calling ShowRelics");
-                RewardScreenManager.Instance.ShowRelics(choices);
-            }
-            else
-            {
-                Debug.LogError("RewardScreenManager.Instance is NULL!");
-            }
+            Debug.Log("Not enough relics to choose from");
+            return;
+        }
+
+        var choices = available.OrderBy(_ => Random.value).Take(3).ToArray();
+        if (RewardScreenManager.Instance != null)
+        {
+            Debug.Log("Calling ShowRelics");
+            RewardScreenManager.Instance.ShowRelics(choices);
+        }
+        else
+        {
+            Debug.LogError("RewardScreenManager.Instance is NULL!");
         }
     }
 
