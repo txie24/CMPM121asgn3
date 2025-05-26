@@ -7670,7 +7670,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   relicSlotPrefab: {fileID: 2097803574700553709, guid: 0949b51f9e2e7a54a9d35b7abb08fc2a, type: 3}
-  contentParent: {fileID: 0}
+  contentParent: {fileID: 2064078950}
 --- !u!1 &1207272276
 GameObject:
   m_ObjectHideFlags: 0
