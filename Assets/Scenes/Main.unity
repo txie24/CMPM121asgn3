@@ -957,7 +957,7 @@ GameObject:
   - component: {fileID: 232596021}
   - component: {fileID: 232596022}
   m_Layer: 0
-  m_Name: tilemap_packed_178
+  m_Name: player sprite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1349,12 +1349,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34917cf4d5f92ff48a26e454244fedfd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  classSelectionUI: {fileID: 1894875728}
-  titleText: {fileID: 1845911481}
+  classSelectionUI: {fileID: 0}
   mageButton: {fileID: 1800808583}
   warlockButton: {fileID: 1782755754}
   battlemageButton: {fileID: 1862359697}
-  classDescriptionText: {fileID: 0}
 --- !u!1 &279594428
 GameObject:
   m_ObjectHideFlags: 0
@@ -9537,7 +9535,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1709288112
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10531,19 +10529,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1782755755}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 519420033}
-        m_TargetAssemblyTypeName: EnemySpawner, Assembly-CSharp
-        m_MethodName: NextWave
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1782755755
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10664,19 +10650,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1800808584}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 519420033}
-        m_TargetAssemblyTypeName: EnemySpawner, Assembly-CSharp
-        m_MethodName: NextWave
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1800808584
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -60980,19 +60954,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1862359698}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 519420033}
-        m_TargetAssemblyTypeName: EnemySpawner, Assembly-CSharp
-        m_MethodName: NextWave
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1862359698
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -61136,7 +61098,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1894875729
 RectTransform:
   m_ObjectHideFlags: 0
