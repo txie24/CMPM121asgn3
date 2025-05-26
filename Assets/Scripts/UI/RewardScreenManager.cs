@@ -106,6 +106,10 @@ public class RewardScreenManager : MonoBehaviour
     {
         yield return new WaitForSeconds(0.25f);
 
+        // Get the wave we just completed
+        int completedWave = spawner.currentWave - 1;
+        Debug.Log($"RewardScreenManager: Completed wave {completedWave}");
+
         // reset feedback texts & buttons
         spellAcquiredText?.gameObject.SetActive(false);
         acceptSpellButton?.gameObject.SetActive(true);
@@ -115,7 +119,7 @@ public class RewardScreenManager : MonoBehaviour
 
         // header
         titleText?.SetText("You Survived!");
-        currentWaveText?.SetText($"Current Wave: {spawner.currentWave - 1}");
+        currentWaveText?.SetText($"Current Wave: {completedWave}");
         nextWaveText?.SetText($"Next Wave: {spawner.currentWave}");
         enemiesKilledText?.SetText($"Enemies Killed: {spawner.lastWaveEnemyCount}");
 
@@ -128,8 +132,14 @@ public class RewardScreenManager : MonoBehaviour
         // hide relic panel to reset
         relicPanel?.SetActive(false);
 
-        // FOR TESTING: always show relics on every wave
-        ShowRelicReward();
+        // Check if this is a relic wave (every 3rd wave starting from wave 3)
+        bool isRelicWave = completedWave >= 3 && completedWave % 3 == 0;
+        Debug.Log($"RewardScreenManager: Wave {completedWave}, isRelicWave = {isRelicWave}");
+
+        if (isRelicWave)
+        {
+            ShowRelicReward();
+        }
 
         // finally, show the full UI
         rewardUI?.SetActive(true);
@@ -267,10 +277,12 @@ public class RewardScreenManager : MonoBehaviour
         spawner?.NextWave();
     }
 
-    // — relic stuff below (unchanged loading logic) —
+    // — relic stuff below —
 
     void ShowRelicReward()
     {
+        Debug.Log("RewardScreenManager: ShowRelicReward called");
+
         var relicsText = Resources.Load<TextAsset>("relics");
         if (relicsText == null)
         {
@@ -282,9 +294,20 @@ public class RewardScreenManager : MonoBehaviour
         {
             var list = JsonUtility.FromJson<RelicDataList>("{\"relics\":" + relicsText.text + "}");
             var allRelics = list.relics.Select(d => new Relic(d)).ToList();
+            Debug.Log($"RewardScreenManager: Loaded {allRelics.Count} total relics");
+
             var available = allRelics.Where(r => !ownedRelics.Any(o => o.Name == r.Name)).ToList();
-            if (available.Count == 0) return;
+            Debug.Log($"RewardScreenManager: {available.Count} relics available (not owned)");
+
+            if (available.Count == 0)
+            {
+                Debug.Log("RewardScreenManager: No available relics");
+                return;
+            }
+
             var choices = available.OrderBy(_ => Random.value).Take(3).ToArray();
+            Debug.Log($"RewardScreenManager: Selected {choices.Length} relic choices: {string.Join(", ", choices.Select(r => r.Name))}");
+
             ShowRelics(choices);
         }
         catch (System.Exception e)
@@ -295,6 +318,8 @@ public class RewardScreenManager : MonoBehaviour
 
     public void ShowRelics(Relic[] relics)
     {
+        Debug.Log($"RewardScreenManager: ShowRelics called with {relics.Length} relics");
+
         titleText?.SetText("You Survived! Choose a Spell and a Relic!");
         relicPanel?.SetActive(true);
 
@@ -316,6 +341,8 @@ public class RewardScreenManager : MonoBehaviour
         if (idx < relics.Length)
         {
             var r = relics[idx];
+            Debug.Log($"RewardScreenManager: Setting up relic slot {idx} with relic '{r.Name}'");
+
             icon?.gameObject.SetActive(true);
             GameManager.Instance.relicIconManager?.PlaceSprite(r.SpriteIndex, icon);
 
@@ -352,13 +379,29 @@ public class RewardScreenManager : MonoBehaviour
 
     void PickRelic(Relic relic)
     {
+        Debug.Log($"RewardScreenManager: PickRelic called for '{relic.Name}'");
+
         if (ownedRelics.Any(r => r.Name == relic.Name))
         {
             Debug.LogWarning($"Relic {relic.Name} already owned");
             return;
         }
+
         ownedRelics.Add(relic);
-        relic.Init();
+        relic.Init(); // This should register the relic's triggers
+
+        // ADD RELIC TO TOP BAR - Show relic in RelicUI
+        if (RelicUI.Instance != null)
+        {
+            RelicUI.Instance.AddRelic(relic);
+            Debug.Log($"RewardScreenManager: Added relic '{relic.Name}' to RelicUI display");
+        }
+        else
+        {
+            Debug.LogWarning("RewardScreenManager: RelicUI.Instance not found! Make sure RelicUI script is attached to RelicUI GameObject.");
+        }
+
+        Debug.Log($"RewardScreenManager: Successfully picked and initialized relic: {relic.Name}");
     }
 
     /// <summary>
@@ -368,24 +411,32 @@ public class RewardScreenManager : MonoBehaviour
     {
         if (selectedIdx != 0)
         {
-            relicIcon1.gameObject.SetActive(false);
-            relicName1.gameObject.SetActive(false);
-            relicButton1.gameObject.SetActive(false);
-            relicTakenText1.gameObject.SetActive(false);
+            relicIcon1?.gameObject.SetActive(false);
+            relicName1?.gameObject.SetActive(false);
+            relicButton1?.gameObject.SetActive(false);
+            relicTakenText1?.gameObject.SetActive(false);
         }
         if (selectedIdx != 1)
         {
-            relicIcon2.gameObject.SetActive(false);
-            relicName2.gameObject.SetActive(false);
-            relicButton2.gameObject.SetActive(false);
-            relicTakenText2.gameObject.SetActive(false);
+            relicIcon2?.gameObject.SetActive(false);
+            relicName2?.gameObject.SetActive(false);
+            relicButton2?.gameObject.SetActive(false);
+            relicTakenText2?.gameObject.SetActive(false);
         }
         if (selectedIdx != 2)
         {
-            relicIcon3.gameObject.SetActive(false);
-            relicName3.gameObject.SetActive(false);
-            relicButton3.gameObject.SetActive(false);
-            relicTakenText3.gameObject.SetActive(false);
+            relicIcon3?.gameObject.SetActive(false);
+            relicName3?.gameObject.SetActive(false);
+            relicButton3?.gameObject.SetActive(false);
+            relicTakenText3?.gameObject.SetActive(false);
         }
+    }
+
+    /// <summary>
+    /// Get the list of owned relics (for external access)
+    /// </summary>
+    public List<Relic> GetOwnedRelics()
+    {
+        return new List<Relic>(ownedRelics);
     }
 }
