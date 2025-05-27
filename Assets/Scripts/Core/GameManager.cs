@@ -55,6 +55,20 @@ public class GameManager
         foreach (var e in new List<GameObject>(enemies))
             if (e != null) GameObject.Destroy(e);
         enemies.Clear();
+
+        // Reset relics - this is the key fix
+        if (RewardScreenManager.Instance != null)
+        {
+            RewardScreenManager.Instance.ResetRelics();
+        }
+
+        // Clear relic UI
+        if (RelicUI.Instance != null)
+        {
+            RelicUI.Instance.ClearAllRelics();
+        }
+
+        Debug.Log("GameManager: Game reset completed, including relic cleanup");
     }
 
     public void AddEnemy(GameObject e) => enemies.Add(e);

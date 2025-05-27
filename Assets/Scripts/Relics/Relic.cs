@@ -27,4 +27,21 @@ public class Relic
     public void Init() => trigger.Subscribe();
     public void Fire() => effect.Activate();
     public void End() => effect.Deactivate();
+
+    /// <summary>
+    /// Clean up relic triggers when game resets
+    /// </summary>
+    public void Cleanup()
+    {
+        try
+        {
+            trigger.Unsubscribe();
+            effect.Deactivate();
+            Debug.Log($"[Relic] '{Name}' cleaned up successfully");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"[Relic] Error cleaning up '{Name}': {ex.Message}");
+        }
+    }
 }

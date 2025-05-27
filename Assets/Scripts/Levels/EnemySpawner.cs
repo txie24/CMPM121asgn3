@@ -174,13 +174,36 @@ public class EnemySpawner : MonoBehaviour
         var stats = PlayerClass.GetStatsForWave(cls, wave);
         Debug.Log($"[EnemySpawner] wave={wave}, class={cls}, stats={string.Join(",", stats.Select(kv => $"{kv.Key}={kv.Value}"))}");
 
-        // apply values
-        pc.hp.SetMaxHP(Mathf.RoundToInt(stats["health"]), true);
+        // Store current HP values for debugging
+        int oldCurrentHP = pc.hp.hp;
+        int oldMaxHP = pc.hp.max_hp;
+        float oldHPPercentage = oldCurrentHP * 1.0f / oldMaxHP;
+
+        Debug.Log($"[EnemySpawner] Before scaling: {oldCurrentHP}/{oldMaxHP} HP ({(oldHPPercentage * 100):F1}%)");
+
+        // apply values - HP first with percentage preservation
+        int newMaxHP = Mathf.RoundToInt(stats["health"]);
+        pc.hp.SetMaxHP(newMaxHP, true);
+
+        // Log after HP scaling
+        Debug.Log($"[EnemySpawner] After HP scaling: {pc.hp.hp}/{pc.hp.max_hp} HP ({(pc.hp.hp * 1.0f / pc.hp.max_hp * 100):F1}%)");
+
+        // Store current mana values for mana percentage preservation
+        int oldCurrentMana = pc.spellcaster.mana;
+        int oldMaxMana = pc.spellcaster.max_mana;
+        float manaPercentage = oldMaxMana > 0 ? (oldCurrentMana * 1.0f / oldMaxMana) : 1.0f;
+
+        // Apply other stats
         pc.spellcaster.max_mana = Mathf.RoundToInt(stats["mana"]);
-        pc.spellcaster.mana = pc.spellcaster.max_mana;
+
+        // Preserve mana percentage instead of refilling to full
+        pc.spellcaster.mana = Mathf.RoundToInt(pc.spellcaster.max_mana * manaPercentage);
+
         pc.spellcaster.mana_reg = Mathf.RoundToInt(stats["mana_regeneration"]);
         pc.spellcaster.spellPower = Mathf.RoundToInt(stats["spellpower"]);
         pc.speed = Mathf.RoundToInt(stats["speed"]);
+
+        Debug.Log($"[EnemySpawner] Final HP: {pc.hp.hp}/{pc.hp.max_hp}, Mana: {pc.spellcaster.mana}/{pc.spellcaster.max_mana}, SP: {pc.spellcaster.spellPower}");
 
         // update UI
         pc.healthui?.SetHealth(pc.hp);

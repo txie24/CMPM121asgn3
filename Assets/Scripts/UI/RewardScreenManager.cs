@@ -105,6 +105,26 @@ public class RewardScreenManager : MonoBehaviour
         prevState = state;
     }
 
+    /// <summary>
+    /// Reset all relics - called when game resets
+    /// </summary>
+    public void ResetRelics()
+    {
+        Debug.Log($"RewardScreenManager: Resetting {ownedRelics.Count} relics");
+
+        // Properly cleanup all relic triggers and effects
+        foreach (var relic in ownedRelics)
+        {
+            Debug.Log($"RewardScreenManager: Cleaning up relic '{relic.Name}'");
+            relic.Cleanup(); // This will unsubscribe triggers and deactivate effects
+        }
+
+        // Clear the owned relics list
+        ownedRelics.Clear();
+
+        Debug.Log("RewardScreenManager: All relics cleared and cleaned up");
+    }
+
     IEnumerator ShowRewardScreen()
     {
         yield return new WaitForSeconds(0.25f);

@@ -13,7 +13,7 @@ public static class RelicEffects
     public static IRelicEffect Create(EffectData d, Relic r) => d.type switch
     {
         "gain-mana" => new GainMana(int.Parse(d.amount), r.Name),
-        "gain-spellpower" => new GainSpellPower(d.amount, r.Name),
+        "gain-spellpower" => new GainSpellPower(d.amount, r.Name, d.until),
         _ => throw new Exception($"Unknown effect {d.type}")
     };
 
@@ -44,11 +44,15 @@ public static class RelicEffects
     {
         readonly string formula;
         readonly string relicName;
+        readonly string until;
+        private int addedSpellPower = 0;
+        private bool isActive = false;
 
-        public GainSpellPower(string f, string name)
+        public GainSpellPower(string f, string name, string untilCondition)
         {
             formula = f;
             relicName = name;
+            until = untilCondition;
         }
 
         public void Activate()
@@ -58,15 +62,49 @@ public static class RelicEffects
 
             var pc = GameManager.Instance.player
                           .GetComponent<PlayerController>();
-            pc.AddSpellPower(v);
 
-            // debug log so you can see both the RPN result and the new total
-            Debug.Log($"[Relic] '{relicName}' → +{v} spell power (formula '{formula}'). Now {pc.spellcaster.spellPower} SP.");
+            // If this is a temporary effect (has "until" condition)
+            if (!string.IsNullOrEmpty(until))
+            {
+                // If we're already active, don't stack - just refresh
+                if (isActive)
+                {
+                    Debug.Log($"[Relic] '{relicName}' → effect refreshed, still +{addedSpellPower} spell power.");
+                    return;
+                }
+
+                // Add temporary spell power
+                addedSpellPower = v;
+                isActive = true;
+                pc.AddSpellPower(v);
+                Debug.Log($"[Relic] '{relicName}' → +{v} temporary spell power (formula '{formula}'). Now {pc.spellcaster.spellPower} SP.");
+            }
+            else
+            {
+                // Permanent effect - just add it
+                pc.AddSpellPower(v);
+                Debug.Log($"[Relic] '{relicName}' → +{v} permanent spell power (formula '{formula}'). Now {pc.spellcaster.spellPower} SP.");
+            }
         }
 
         public void Deactivate()
         {
-            Debug.Log($"[Relic] '{relicName}' effect ended.");
+            // Only remove spell power if this was a temporary effect and it's currently active
+            if (!string.IsNullOrEmpty(until) && isActive && addedSpellPower > 0)
+            {
+                var pc = GameManager.Instance.player
+                              .GetComponent<PlayerController>();
+
+                pc.AddSpellPower(-addedSpellPower); // Remove the spell power we added
+                Debug.Log($"[Relic] '{relicName}' → removed {addedSpellPower} temporary spell power. Now {pc.spellcaster.spellPower} SP.");
+
+                isActive = false;
+                addedSpellPower = 0;
+            }
+            else
+            {
+                Debug.Log($"[Relic] '{relicName}' effect ended (permanent effect, no change).");
+            }
         }
     }
 }
