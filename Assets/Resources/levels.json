@@ -5,7 +5,7 @@
       "spawns": [
         {
           "enemy": "zombie",
-          "count": "0",
+          "count": "5 wave +",
           "hp": "base 5 wave * +",
           "speed": "base wave +",
           "delay": "5",
@@ -14,20 +14,20 @@
         },
         {
           "enemy": "skeleton",
-          "count": "0",
+          "count": "wave 3 /",
           "hp": "30 wave *",
           "sequence": [2, 2],
           "location": "random red"
         },
         {
           "enemy": "warlock",
-          "count": "0",
+          "count": "wave 5 / 1 wave 5 % - *",
           "hp": "100 25 wave * +",
           "location": "random bone"
         },
         {
             "enemy": "goblin",
-            "count": "0",
+            "count": "2 wave +",
             "hp": "base 2 wave * +",
             "speed": "base",
             "sequence": [1, 1],
@@ -35,7 +35,7 @@
         },
         {
             "enemy": "boss",
-            "count": "0",
+            "count": "wave 10 / 1 wave 10 % - *",
             "hp": "base",
             "location": "random red"
           }
