@@ -72,7 +72,7 @@ public class EnemySpawner : MonoBehaviour
         // swap sprite based on chosen class
         string cls = ChooseClassManager.SelectedClass ?? "mage";
         int idx = PlayerClass.GetSpriteIndex(cls);
-        Debug.Log($"[EnemySpawner] sprite idx={idx} for class='{cls}'");
+        //Debug.Log($"[EnemySpawner] sprite idx={idx} for class='{cls}'");
 
         // **explicitly find your child named "player sprite"**
         var spriteGO = GameManager.Instance.player
@@ -166,25 +166,25 @@ public class EnemySpawner : MonoBehaviour
 
     private void ScalePlayerForWave(int wave)
     {
-        var pc = GameManager.Instance.player
-                              .GetComponent<PlayerController>();
-        if (pc == null) throw new InvalidOperationException("no PlayerController");
+        var pc = GameManager.Instance.player.GetComponent<PlayerController>();
+        var stats = PlayerClass.GetStatsForWave(ChooseClassManager.SelectedClass, wave);
 
-        string cls = ChooseClassManager.SelectedClass ?? "mage";
-        var stats = PlayerClass.GetStatsForWave(cls, wave);
-        Debug.Log($"[EnemySpawner] wave={wave}, class={cls}, stats={string.Join(",", stats.Select(kv => $"{kv.Key}={kv.Value}"))}");
+        int baseHP = Mathf.RoundToInt(stats["health"]);
+        int bonus = pc.relicMaxHPBonus;              // <- grab your Titan’s Heart stacks
+        int total = baseHP + bonus;
 
-        // apply values
-        pc.hp.SetMaxHP(Mathf.RoundToInt(stats["health"]), true);
+        Debug.Log($"[EnemySpawner] wave={wave} baseHP={baseHP} + relicBonus={bonus} => totalHP={total}");
+        pc.hp.SetMaxHP(total, true);
+
         pc.spellcaster.max_mana = Mathf.RoundToInt(stats["mana"]);
         pc.spellcaster.mana = pc.spellcaster.max_mana;
         pc.spellcaster.mana_reg = Mathf.RoundToInt(stats["mana_regeneration"]);
         pc.spellcaster.spellPower = Mathf.RoundToInt(stats["spellpower"]);
         pc.speed = Mathf.RoundToInt(stats["speed"]);
-
-        // update UI
         pc.healthui?.SetHealth(pc.hp);
         pc.manaui?.SetSpellCaster(pc.spellcaster);
+        Debug.Log($"[EnemySpawner] After wave {wave} scaling → HP = {pc.hp.hp}/{pc.hp.max_hp}");
+
     }
 
     private IEnumerator SpawnEnemies(Spawn spawn, Action<int> onComplete)

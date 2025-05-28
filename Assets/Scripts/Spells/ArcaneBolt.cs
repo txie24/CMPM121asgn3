@@ -74,7 +74,7 @@ public sealed class ArcaneBolt : Spell
         float dmg = Damage;
         float spd = Speed;
 
-        Debug.Log($"[{displayName}] Casting ▶ dmg={dmg:F1} ({damageType}), mana={Mana:F1}, spd={spd:F1}");
+        //Debug.Log($"[{displayName}] Casting ▶ dmg={dmg:F1} ({damageType}), mana={Mana:F1}, spd={spd:F1}");
 
         // 2) Fire the projectile using captured values
         GameManager.Instance.projectileManager.CreateProjectile(
@@ -90,7 +90,6 @@ public sealed class ArcaneBolt : Spell
                     int amt = Mathf.RoundToInt(dmg);
                     var dmgObj = new global::Damage(amt, damageType);
                     hit.Damage(dmgObj);
-                    Debug.Log($"[{displayName}] Hit {hit.owner.name} for {amt} ({damageType})");
                 }
             });
 

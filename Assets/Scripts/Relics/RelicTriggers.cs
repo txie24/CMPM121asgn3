@@ -109,12 +109,6 @@ public static class RelicTriggers
         readonly Relic relic;
         public EndWaveTrigger(Relic r) { relic = r; }
 
-        void OnWaveEnd(int wave)
-        {
-            Debug.Log($"[RelicTrigger] “{relic.Name}” triggered on wave end {wave}");
-            relic.Fire();
-        }
-
         public void Subscribe()
         {
             EnemySpawner.OnWaveEnd += OnWaveEnd;
@@ -125,6 +119,19 @@ public static class RelicTriggers
         {
             EnemySpawner.OnWaveEnd -= OnWaveEnd;
             Debug.Log($"[RelicTrigger] “{relic.Name}” unsubscribed from OnWaveEnd");
+        }
+
+        void OnWaveEnd(int wave)
+        {
+            // instead of firing immediately, wait one frame so class‐scaling runs first
+            CoroutineManager.Instance.StartCoroutine(DelayedFire());
+        }
+
+        IEnumerator DelayedFire()
+        {
+            yield return null;  // wait one frame
+            Debug.Log($"[RelicTrigger] “{relic.Name}” firing (delayed) on wave end");
+            relic.Fire();
         }
     }
 

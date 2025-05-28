@@ -289,10 +289,14 @@ public class RewardScreenManager : MonoBehaviour
         {
             var list = JsonUtility.FromJson<RelicDataList>("{\"relics\":" + relicsText.text + "}");
             var allRelics = list.relics.Select(d => new Relic(d)).ToList();
-            Debug.Log($"RewardScreenManager: Loaded {allRelics.Count} total relics");
+            //Debug.Log($"RewardScreenManager: Loaded {allRelics.Count} total relics");
 
-            var available = allRelics.Where(r => !ownedRelics.Any(o => o.Name == r.Name)).ToList();
-            Debug.Log($"RewardScreenManager: {available.Count} relics available (not owned)");
+            // exclude anything we’ve already picked
+            var available = allRelics
+                .Where(r => !ownedRelics.Any(o => o.Name == r.Name))
+                .ToList();
+
+            //Debug.Log($"RewardScreenManager: {available.Count} relics available (not owned)");
 
             if (available.Count == 0)
             {
@@ -300,8 +304,20 @@ public class RewardScreenManager : MonoBehaviour
                 return;
             }
 
-            var choices = available.OrderBy(_ => Random.value).Take(3).ToArray();
-            Debug.Log($"RewardScreenManager: Selected {choices.Length} relic choices: {string.Join(", ", choices.Select(r => r.Name))}");
+            // shuffle in-place using Fisher–Yates
+            int count = available.Count;
+            int choiceCount = Mathf.Min(3, count);
+            for (int i = 0; i < choiceCount; i++)
+            {
+                int j = Random.Range(i, count);
+                var tmp = available[i];
+                available[i] = available[j];
+                available[j] = tmp;
+            }
+
+            // take the first up to 3
+            var choices = available.Take(choiceCount).ToArray();
+            //Debug.Log($"RewardScreenManager: Selected {choices.Length} relic choices: {string.Join(", ", choices.Select(r => r.Name))}");
 
             ShowRelics(choices);
         }
@@ -311,9 +327,10 @@ public class RewardScreenManager : MonoBehaviour
         }
     }
 
+
     public void ShowRelics(Relic[] relics)
     {
-        Debug.Log($"RewardScreenManager: ShowRelics called with {relics.Length} relics");
+        //Debug.Log($"RewardScreenManager: ShowRelics called with {relics.Length} relics");
 
         titleText?.SetText("You Survived! Choose a Spell and a Relic!");
         relicPanel?.SetActive(true);
@@ -336,7 +353,6 @@ public class RewardScreenManager : MonoBehaviour
         if (idx < relics.Length)
         {
             var r = relics[idx];
-            Debug.Log($"RewardScreenManager: Setting up relic slot {idx} with relic '{r.Name}'");
 
             icon?.gameObject.SetActive(true);
             GameManager.Instance.relicIconManager?.PlaceSprite(r.SpriteIndex, icon);

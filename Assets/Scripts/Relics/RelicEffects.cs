@@ -158,14 +158,23 @@ public static class RelicEffects
         readonly int amt;
         readonly string relicName;
         public GainMaxHP(int a, string name) { amt = a; relicName = name; }
+
         public void Activate()
         {
-            Debug.Log($"[RelicEffect] “{relicName}”: +{amt} max HP");
             var pc = GameManager.Instance.player.GetComponent<PlayerController>();
+
+            // keep track of the total relic‐bonus
+            pc.relicMaxHPBonus += amt;
+
+            // immediately bump you up by amt
+            Debug.Log($"[RelicEffect] “{relicName}”: +{amt} max HP (total relic bonus={pc.relicMaxHPBonus})");
             pc.hp.SetMaxHP(pc.hp.max_hp + amt, true);
+            pc.healthui.SetHealth(pc.hp);
         }
+
         public void Deactivate() { }
     }
+
 
     class GainSpellPowerUntilDamage : IRelicEffect
     {

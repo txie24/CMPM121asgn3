@@ -7,7 +7,7 @@ public class PlayerController : MonoBehaviour
 {
     // relic hook
     public static event Action<Vector3> OnPlayerMove;
-
+    public int relicMaxHPBonus = 0;
     public Hittable hp;
     public HealthBar healthui;
     public ManaBar manaui;

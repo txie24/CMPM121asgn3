@@ -35,7 +35,7 @@ public sealed class MagicMissile : Spell
                     { "wave", wv }
                 },
                 10f);
-            Debug.Log($"[MagicMissile] Damage Scaling ▶ power={pw}, wave={wv}, damage={dmg:F2}");
+            //Debug.Log($"[MagicMissile] Damage Scaling ▶ power={pw}, wave={wv}, damage={dmg:F2}");
             return dmg;
         }
     }
