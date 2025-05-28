@@ -1,4 +1,5 @@
-using UnityEngine;
+﻿using UnityEngine;
+using System;              // ← added for Action
 using System.Collections;
 using System.Collections.Generic;
 
@@ -15,6 +16,9 @@ public class SpellCaster : MonoBehaviour
     [Header("Spells")]
     public int spellPower;
     public List<Spell> spells = new(4);
+
+    // ← new: fired after any spell finishes casting
+    public static event Action OnSpellCast;
 
     void Awake()
     {
@@ -45,24 +49,17 @@ public class SpellCaster : MonoBehaviour
             yield break;
         }
 
-        // Bug fix: First check if there's enough mana AND the spell is ready
-        if (!s.IsReady)
-        {
+        if (!s.IsReady || mana < s.Mana)
             yield break;
-        }
-        
-        if (mana < s.Mana)
-        {
-            yield break;
-        }
-        
+
         Debug.Log($"[SpellCaster] Slot {slot} -> Casting \"{s.DisplayName}\" (mana={mana}, cost={s.Mana})");
-        
-        // Deduct mana and update last cast time BEFORE casting
+
         mana -= Mathf.RoundToInt(s.Mana);
         s.lastCast = Time.time;
-        
-        // Then cast the spell
+
         yield return s.TryCast(from, to);
+
+        // ← new: notify one‐shot relics
+        OnSpellCast?.Invoke();
     }
 }
