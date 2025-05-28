@@ -133,12 +133,16 @@ public class RewardScreenManager : MonoBehaviour
         // hide relic panel to reset
         relicPanel?.SetActive(false);
 
-        // **always** offer relics
-        ShowRelicReward();
+        // only offer relics on wave 3, 6, 9, …
+        if (completedWave % 3 == 0)
+        {
+            ShowRelicReward();
+        }
 
         // finally, show the full UI
         rewardUI?.SetActive(true);
     }
+
 
     void GenerateSpellReward()
     {

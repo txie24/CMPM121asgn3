@@ -5,7 +5,7 @@
        "icon": 0,
        "damage": {"amount": "25 power 5 / +", "type": "arcane"},
        "mana_cost": "10",
-       "cooldown": "0",
+       "cooldown": "1.5",
        "projectile": {"trajectory": "straight", "speed": "8 power 5 / +", "sprite": 0}
    },
    "magic_missile":  {
@@ -90,14 +90,14 @@
        "name": "knockback",
        "description": "Applies knockback to the enemy hit.",
        "force": "20"
-   },
-   "bounce": {
-       "name": "bounce",
-       "description": "Bounces to another enemy nearby, with decreased second knockback damage and increased speed.",
-       "count": "2",
-       "bounceRange": "15",
-       "bounceCount": "2",
-       "damage_multiplier": "0.5",
-       "speedMultiplier ": "1.5",
+    },
+"   bounce": {
+        "name": "bounce",
+        "description": "Bounces to another enemy nearby, with decreased second knockback damage and increased speed.",
+        "count": "2",
+        "bounceRange": "15",
+        "bounceCount": "2",
+        "damage_multiplier": "0.5",
+        "speedMultiplier ": "1.5",
 }
 }
