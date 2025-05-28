@@ -223,8 +223,8 @@ public class EnemySpawner : MonoBehaviour
             for (int i = 0; i < batch && spawned < total; i++)
             {
                 var pt = PickSpawnPoint(spawn.location);
-                var ofs = UnityEngine.Random.insideUnitCircle * 3f;
-                var go = Instantiate(enemy, pt.transform.position + (Vector3)ofs, Quaternion.identity);
+                Vector3 spawnPos = FindValidSpawnPosition(pt.transform.position);
+                var go = Instantiate(enemy, spawnPos, Quaternion.identity);
 
                 // set enemy sprite
                 var sr = go.GetComponent<SpriteRenderer>();
@@ -243,6 +243,40 @@ public class EnemySpawner : MonoBehaviour
         }
 
         onComplete?.Invoke(spawned);
+    }
+
+    private Vector3 FindValidSpawnPosition(Vector3 basePosition)
+    {
+        // Try the base position first
+        if (!IsPositionBlocked(basePosition))
+            return basePosition;
+
+        // Try nearby positions with increasing distance
+        for (float radius = 1f; radius <= 5f; radius += 0.5f)
+        {
+            for (int attempts = 0; attempts < 8; attempts++)
+            {
+                float angle = attempts * 45f * Mathf.Deg2Rad;
+                Vector3 testPos = basePosition + new Vector3(
+                    Mathf.Cos(angle) * radius,
+                    Mathf.Sin(angle) * radius,
+                    0f
+                );
+
+                if (!IsPositionBlocked(testPos))
+                    return testPos;
+            }
+        }
+
+        // Fallback: return base position with small random offset
+        return basePosition + (Vector3)UnityEngine.Random.insideUnitCircle * 0.5f;
+    }
+
+    private bool IsPositionBlocked(Vector3 position)
+    {
+        // Check for colliders at this position (walls, other enemies, etc.)
+        Collider2D hit = Physics2D.OverlapCircle(position, 0.4f);
+        return hit != null && !hit.CompareTag("unit") && !hit.CompareTag("projectile");
     }
 
     private SpawnPoint PickSpawnPoint(string loc)

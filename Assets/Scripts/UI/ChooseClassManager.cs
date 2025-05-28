@@ -29,7 +29,6 @@ public class ChooseClassManager : MonoBehaviour
         selectedLevelName = levelName;
         spawner = sp;
         classSelectionUI.SetActive(true);
-        Debug.Log($"[ChooseClass] showing for level “{levelName}”");
     }
 
     private void Select(string cls)
@@ -40,7 +39,6 @@ public class ChooseClassManager : MonoBehaviour
 
         if (spawner != null)
         {
-            Debug.Log($"[ChooseClass] starting level “{selectedLevelName}” as “{cls}”");
             spawner.StartLevel(selectedLevelName);
         }
         else
