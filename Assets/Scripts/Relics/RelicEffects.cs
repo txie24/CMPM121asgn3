@@ -15,6 +15,9 @@ public static class RelicEffects
         if (d.type == "gain-mana")
             return new GainMana(int.Parse(d.amount), r.Name);
 
+        if (d.type == "gain-health")
+            return new GainHealth(int.Parse(d.amount), r.Name);
+
         if (d.type == "gain-spellpower")
         {
             if (d.until == "cast-spell")
@@ -40,10 +43,26 @@ public static class RelicEffects
         public void Activate()
         {
             Debug.Log($"[RelicEffect] “{relicName}”: +{amt} mana");
-            GameManager.Instance.player
-                .GetComponent<PlayerController>()
-                .GainMana(amt);
+            var pc = GameManager.Instance.player.GetComponent<PlayerController>();
+            pc.GainMana(amt);
         }
+        public void Deactivate() { }
+    }
+
+    class GainHealth : IRelicEffect
+    {
+        readonly int amt;
+        readonly string relicName;
+        public GainHealth(int a, string name) { amt = a; relicName = name; }
+
+        public void Activate()
+        {
+            Debug.Log($"[RelicEffect] “{relicName}”: +{amt} HP");
+            var pc = GameManager.Instance.player.GetComponent<PlayerController>();
+            pc.hp.hp = Mathf.Min(pc.hp.max_hp, pc.hp.hp + amt);
+            pc.healthui.SetHealth(pc.hp);
+        }
+
         public void Deactivate() { }
     }
 
@@ -57,9 +76,7 @@ public static class RelicEffects
             var vars = new Dictionary<string, int> { { "wave", GameManager.Instance.wavesCompleted } };
             int v = RPNEvaluator.Evaluate(formula, vars);
             Debug.Log($"[RelicEffect] “{relicName}”: +{v} SP (formula: {formula})");
-            GameManager.Instance.player
-                .GetComponent<PlayerController>()
-                .AddSpellPower(v);
+            GameManager.Instance.player.GetComponent<PlayerController>().AddSpellPower(v);
         }
         public void Deactivate() { }
     }
@@ -70,11 +87,7 @@ public static class RelicEffects
         readonly string relicName;
         bool pending = false;
 
-        public GainSpellPowerOnce(int a, string name)
-        {
-            amt = a;
-            relicName = name;
-        }
+        public GainSpellPowerOnce(int a, string name) { amt = a; relicName = name; }
 
         public void Activate()
         {
@@ -119,11 +132,7 @@ public static class RelicEffects
         int buffAmt = 0;
         bool active = false;
 
-        public GainSpellPowerUntilMove(string f, string name)
-        {
-            formula = f;
-            relicName = name;
-        }
+        public GainSpellPowerUntilMove(string f, string name) { formula = f; relicName = name; }
 
         public void Activate()
         {
@@ -131,9 +140,7 @@ public static class RelicEffects
             var vars = new Dictionary<string, int> { { "wave", GameManager.Instance.wavesCompleted } };
             buffAmt = RPNEvaluator.Evaluate(formula, vars);
             Debug.Log($"[RelicEffect] “{relicName}”: +{buffAmt} SP (until move) (formula: {formula})");
-            GameManager.Instance.player
-                .GetComponent<PlayerController>()
-                .AddSpellPower(buffAmt);
+            GameManager.Instance.player.GetComponent<PlayerController>().AddSpellPower(buffAmt);
             active = true;
         }
 
@@ -141,9 +148,7 @@ public static class RelicEffects
         {
             if (!active) return;
             Debug.Log($"[RelicEffect] “{relicName}”: –{buffAmt} SP (buff removed on move)");
-            GameManager.Instance.player
-                .GetComponent<PlayerController>()
-                .AddSpellPower(-buffAmt);
+            GameManager.Instance.player.GetComponent<PlayerController>().AddSpellPower(-buffAmt);
             active = false;
         }
     }

@@ -62,9 +62,9 @@
       "type": "deal-damage"
     },
     "effect": {
-      "description": "you gain 1 mana",
-      "type": "gain-mana",
-      "amount": "1"
+    "description": "you gain 10 HP",
+    "type": "gain-health",
+    "amount": "10"
     }
   },
   {
