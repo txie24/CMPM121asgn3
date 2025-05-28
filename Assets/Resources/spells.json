@@ -91,7 +91,7 @@
        "description": "Applies knockback to the enemy hit.",
        "force": "20"
     },
-"   bounce": {
+   "bounce": {
         "name": "bounce",
         "description": "Bounces to another enemy nearby, with decreased second knockback damage and increased speed.",
         "count": "2",
